@@ -9,7 +9,7 @@
             margin: 0;
             padding: 0;
             overflow: hidden;
-            background: #0a0a0a;
+            background: #000000;
             font-family: 'Courier New', monospace;
             color: #00aa00;
         }
@@ -18,7 +18,7 @@
             top: 20px;
             left: 20px;
             width: 350px;
-            background: rgba(10, 10, 10, 0.95);
+            background: rgba(0, 0, 0, 0.95);
             border: 1px solid #00aa00;
             padding: 15px;
             border-radius: 5px;
@@ -26,13 +26,29 @@
             z-index: 100;
             max-height: 500px;
             overflow-y: auto;
-            box-shadow: 0 0 20px rgba(0, 170, 0, 0.2);
+            box-shadow: 0 0 20px rgba(0, 170, 0, 0.3);
         }
         #info-panel h3 {
             margin: 0 0 10px 0;
             color: #00ff41;
             border-bottom: 1px solid #00aa00;
             padding-bottom: 5px;
+            position: relative;
+        }
+        #close-info {
+            position: absolute;
+            top: 0;
+            right: 10px;
+            background: none;
+            border: none;
+            color: #00ff41;
+            font-size: 24px;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.3s;
+        }
+        #close-info:hover {
+            opacity: 1;
         }
         #info-panel ul {
             margin: 0;
@@ -51,21 +67,10 @@
             color: #00aa00;
         }
         #layer-vulns {
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.7);
             padding: 10px;
             margin-top: 10px;
             border-radius: 3px;
-        }
-        #legend {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            background: rgba(10, 10, 10, 0.95);
-            border: 1px solid #00aa00;
-            padding: 10px;
-            border-radius: 5px;
-            z-index: 100;
-            font-size: 12px;
         }
         #loading {
             position: absolute;
@@ -77,47 +82,12 @@
             z-index: 200;
             text-align: center;
         }
-        #controls {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: rgba(10, 10, 10, 0.95);
-            border: 1px solid #00aa00;
-            padding: 10px;
-            border-radius: 5px;
-            z-index: 100;
-        }
-        button {
-            background: #0a0a0a;
-            color: #00aa00;
-            border: 1px solid #00aa00;
-            padding: 8px 12px;
-            margin: 3px;
-            cursor: pointer;
-            border-radius: 3px;
-            font-family: inherit;
-            transition: all 0.3s;
-        }
-        button:hover {
-            background: #00aa00;
-            color: #0a0a0a;
-            box-shadow: 0 0 10px rgba(0, 170, 0, 0.5);
-        }
-        #search-input {
-            background: #0a0a0a;
-            color: #00aa00;
-            border: 1px solid #00aa00;
-            padding: 5px;
-            margin: 5px;
-            border-radius: 3px;
-            font-family: inherit;
-        }
         #scan-results {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(10, 10, 10, 0.95);
+            background: rgba(0, 0, 0, 0.95);
             border: 1px solid #ff4444;
             padding: 20px;
             border-radius: 5px;
@@ -125,35 +95,27 @@
             z-index: 150;
             max-width: 600px;
             text-align: center;
+            color: #ff4444;
+        }
+        #scan-results button {
+            background: #000;
+            color: #ff4444;
+            border: 1px solid #ff4444;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 3px;
         }
     </style>
 </head>
 <body>
     <div id="loading">Initializing Stark Globe... Neural scan in progress... <br><span style="font-size:14px;">Establishing secure orbital view...</span></div>
     <div id="info-panel">
-        <h3 id="node-title">Node Intel</h3>
+        <h3 id="node-title">Node Intel <button id="close-info" onclick="closeInfo()">×</button></h3>
         <ul id="node-details"></ul>
         <div id="layer-vulns">
             <h4>Layer Loopholes</h4>
             <ul id="layer-loopholes"></ul>
         </div>
-    </div>
-    <div id="legend">
-        <strong>Orbital Layers:</strong><br>
-        <span style="color:#cc0000">● Perimeter (DMZ)</span><br>
-        <span style="color:#ccaa00">● Infrastructure</span><br>
-        <span style="color:#00aa00">● Core Systems</span><br>
-        <span style="color:#0066cc">● Pivot Vectors (Lines)</span><br>
-        <strong>Status:</strong> <span id="vuln-count">0</span> active exploits detected
-    </div>
-    <div id="controls">
-        <input type="text" id="search-input" placeholder="Search Node..." onkeyup="searchNodes(event)">
-        <br>
-        <button onclick="resetView()">Reset Orbit</button>
-        <button onclick="togglePaths()">Toggle Vectors</button>
-        <button onclick="explodeView()">Explode Layers</button>
-        <button onclick="simulateAttack()">Simulate Breach</button>
-        <button onclick="scanForVulns()">Deep Scan</button>
     </div>
     <div id="scan-results">
         <h3>Scan Complete</h3>
@@ -240,11 +202,11 @@
             { name: 'Monitoring (ELK)', layer: 'core', type: 'log', radius: 4, phi: 5*Math.PI/6, theta: Math.PI/2, vulns: ['Log Injection', 'Kibana RCE'], nextSteps: ['ElastAlert Abuse', 'KQL Injection'], difficulty: 4 }
         ];
 
-        // Expanded Connections with difficulties - Fixed index 14 to 13
+        // Expanded Connections with difficulties
         const connectionData = [
             [0, 4], [1, 5], [2, 4], [3, 5], // Perimeter to Infra
             [4, 6], [5, 6], [4, 7], [6, 8], [7, 9], // Infra internals
-            [6, 10], [8, 11], [9, 12], [10, 13], [11, 13] // Core pivots - fixed last to [11,13]
+            [6, 10], [8, 11], [9, 12], [10, 13], [11, 13] // Core pivots
         ];
 
         function init() {
@@ -252,9 +214,9 @@
                 console.log('Starting Stark Globe init...');
                 console.log('Three.js loaded:', THREE.REVISION);
 
-                // Scene setup - Darker, more atmospheric
+                // Scene setup - Pure black
                 window.scene = new THREE.Scene();
-                window.scene.fog = new THREE.Fog(0x0a0a0a, 5, 60);
+                window.scene.fog = new THREE.Fog(0x000000, 5, 60);
                 console.log('Scene created');
 
                 window.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -263,11 +225,11 @@
 
                 window.renderer = new THREE.WebGLRenderer({ antialias: true });
                 window.renderer.setSize(window.innerWidth, window.innerHeight);
-                window.renderer.setClearColor(0x0a0a0a);
+                window.renderer.setClearColor(0x000000);
                 window.renderer.shadowMap.enabled = true;
                 window.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
                 window.renderer.toneMapping = THREE.ReinhardToneMapping;
-                window.renderer.toneMappingExposure = 1.2;
+                window.renderer.toneMappingExposure = 1.5;
                 document.body.appendChild(window.renderer.domElement);
                 console.log('Renderer created');
 
@@ -275,7 +237,7 @@
                 window.composer = new EffectComposer(window.renderer);
                 const renderPass = new RenderPass(window.scene, window.camera);
                 window.composer.addPass(renderPass);
-                const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 2.0, 0.5, 0.1);
+                const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
                 window.composer.addPass(bloomPass);
                 console.log('Composer and Bloom setup');
 
@@ -293,15 +255,15 @@
                 console.log('Raycaster created');
 
                 // Enhanced Lighting for ultimate visuals
-                const ambientLight = new THREE.AmbientLight(0x002200, 0.6);
+                const ambientLight = new THREE.AmbientLight(0x001100, 0.4);
                 window.scene.add(ambientLight);
 
-                const directionalLight = new THREE.DirectionalLight(0x00aa00, 1.0);
+                const directionalLight = new THREE.DirectionalLight(0x00aa00, 1.2);
                 directionalLight.position.set(10, 10, 5);
                 directionalLight.castShadow = true;
                 window.scene.add(directionalLight);
 
-                const pointLight = new THREE.PointLight(0x004400, 1.0, 100);
+                const pointLight = new THREE.PointLight(0x002200, 1.5, 100);
                 pointLight.position.set(0, 0, 0);
                 pointLight.userData = { central: true };
                 window.scene.add(pointLight);
@@ -332,7 +294,7 @@
 
         function createLayers() {
             const layerRadii = { perimeter: 12, infra: 7, core: 4 };
-            const layerColors = { perimeter: 0x440000, infra: 0x444400, core: 0x004400 };
+            const layerColors = { perimeter: 0x330000, infra: 0x333300, core: 0x003300 };
 
             Object.keys(layerRadii).forEach(layer => {
                 const geometry = new THREE.SphereGeometry(layerRadii[layer], 128, 64); // Ultra smooth
@@ -340,7 +302,7 @@
                     color: layerColors[layer], 
                     wireframe: true, 
                     transparent: true, 
-                    opacity: 0.1
+                    opacity: 0.08
                 });
                 window.layers[layer] = new THREE.Group();
                 const sphere = new THREE.Mesh(geometry, material);
@@ -355,16 +317,16 @@
                 const y = data.radius * Math.sin(data.phi) * Math.sin(data.theta);
                 const z = data.radius * Math.cos(data.phi);
 
-                // Ultimate node: Icosahedron with high emissive for bloom
-                const geometry = new THREE.IcosahedronGeometry(0.25, 2); // Higher detail
+                // Ultimate node: High-detail icosahedron with advanced material
+                const geometry = new THREE.IcosahedronGeometry(0.25, 3); // Even higher detail
                 const material = new THREE.MeshStandardMaterial({ 
                     color: getLayerColor(data.layer),
-                    emissive: new THREE.Color(getLayerColor(data.layer)).multiplyScalar(0.5), // High emissive for bloom
-                    emissiveIntensity: 0.5,
-                    metalness: 0.8,
-                    roughness: 0.2,
+                    emissive: new THREE.Color(getLayerColor(data.layer)).multiplyScalar(0.8), // Intense emissive
+                    emissiveIntensity: 0.8,
+                    metalness: 0.9,
+                    roughness: 0.1,
                     transparent: true,
-                    opacity: 0.95
+                    opacity: 0.98
                 });
                 const node = new THREE.Mesh(geometry, material);
                 node.position.set(x, y, z);
@@ -374,12 +336,24 @@
                 window.layers[data.layer].add(node);
                 window.nodes.push(node);
 
+                // Aura ring for VFX
+                const ringGeo = new THREE.RingGeometry(0.3, 0.5, 32);
+                const ringMat = new THREE.MeshBasicMaterial({ 
+                    color: getLayerColor(data.layer), 
+                    side: THREE.DoubleSide, 
+                    transparent: true, 
+                    opacity: 0.4 
+                });
+                const ring = new THREE.Mesh(ringGeo, ringMat);
+                ring.rotation.x = Math.PI / 2;
+                node.add(ring);
+
                 // Enhanced label
                 const canvas = document.createElement('canvas');
                 const context = canvas.getContext('2d');
                 canvas.width = 256;
                 canvas.height = 64;
-                context.fillStyle = 'rgba(10,10,10,0.8)';
+                context.fillStyle = 'rgba(0,0,0,0.9)';
                 context.fillRect(0, 0, 256, 64);
                 context.strokeStyle = '#00aa00';
                 context.lineWidth = 2;
@@ -397,7 +371,7 @@
                 node.userData.label = sprite;
 
                 // Node-specific point light for enhanced glow
-                const nodeLight = new THREE.PointLight(getLayerColor(data.layer), 0.5, 2);
+                const nodeLight = new THREE.PointLight(getLayerColor(data.layer), 0.8, 3);
                 nodeLight.position.copy(node.position);
                 window.scene.add(nodeLight);
             });
@@ -414,8 +388,7 @@
                 const material = new THREE.LineBasicMaterial({ 
                     color: 0x003366, 
                     transparent: true, 
-                    opacity: 0.6,
-                    linewidth: 2
+                    opacity: 0.8
                 });
                 const line = new THREE.Line(geometry, material);
                 window.scene.add(line);
@@ -425,30 +398,37 @@
         }
 
         function createAdvancedParticles() {
-            // Enhanced multi-layer particles with more count
-            for (let i = 0; i < 5; i++) { // More layers
+            // Ultimate particles: more layers, higher count, color variation
+            for (let i = 0; i < 6; i++) {
                 const particlesGeometry = new THREE.BufferGeometry();
-                const particlesCnt = 3000; // Increased
+                const particlesCnt = 5000;
                 const posArray = new Float32Array(particlesCnt * 3);
                 const velArray = new Float32Array(particlesCnt * 3);
+                const colorArray = new Float32Array(particlesCnt * 3);
                 for (let j = 0; j < particlesCnt * 3; j += 3) {
-                    const radius = 3 + i * 8;
+                    const radius = 2 + i * 7;
                     const phi = Math.random() * Math.PI * 2;
                     const theta = Math.random() * Math.PI * 2;
                     posArray[j] = radius * Math.sin(phi) * Math.cos(theta);
                     posArray[j+1] = radius * Math.sin(phi) * Math.sin(theta);
                     posArray[j+2] = radius * Math.cos(phi);
-                    velArray[j] = (Math.random() - 0.5) * 0.02;
-                    velArray[j+1] = (Math.random() - 0.5) * 0.02;
-                    velArray[j+2] = (Math.random() - 0.5) * 0.02;
+                    velArray[j] = (Math.random() - 0.5) * 0.03;
+                    velArray[j+1] = (Math.random() - 0.5) * 0.03;
+                    velArray[j+2] = (Math.random() - 0.5) * 0.03;
+                    // Color variation for cyber feel
+                    colorArray[j] = Math.random() * 0.2;
+                    colorArray[j+1] = Math.random() * 0.2 + 0.1;
+                    colorArray[j+2] = Math.random() * 0.2 + 0.2;
                 }
                 particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
                 particlesGeometry.setAttribute('velocity', new THREE.BufferAttribute(velArray, 3));
+                particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
                 const particlesMaterial = new THREE.PointsMaterial({
-                    size: 0.03,
-                    color: 0x002200,
+                    size: 0.04,
+                    vertexColors: true,
                     transparent: true,
-                    opacity: 0.4
+                    opacity: 0.5,
+                    blending: THREE.AdditiveBlending
                 });
                 const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
                 particlesMesh.userData = { type: 'particles', positions: posArray, velocities: velArray };
@@ -457,20 +437,31 @@
         }
 
         function createHolographicEffects() {
-            // Enhanced central holographic core with rotation and bloom trigger
-            const coreGeometry = new THREE.TorusKnotGeometry(1, 0.3, 100, 16);
+            // Ultimate core: Complex geometry with shader-like material
+            const coreGeometry = new THREE.DodecahedronGeometry(1, 2);
             const coreMaterial = new THREE.MeshStandardMaterial({ 
-                color: 0x004400, 
-                emissive: 0x004400,
-                emissiveIntensity: 0.8, // High for bloom
+                color: 0x002200, 
+                emissive: 0x00aa00,
+                emissiveIntensity: 1.2, // Extreme for bloom
                 transparent: true, 
-                opacity: 0.7,
+                opacity: 0.8,
                 metalness: 1,
                 roughness: 0,
-                side: THREE.DoubleSide
+                wireframe: true
             });
             const core = new THREE.Mesh(coreGeometry, coreMaterial);
             window.scene.add(core);
+
+            // Additional holographic sphere
+            const holoGeometry = new THREE.SphereGeometry(1.5, 64, 32);
+            const holoMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0x00aa00, 
+                wireframe: true, 
+                transparent: true, 
+                opacity: 0.2 
+            });
+            const holoSphere = new THREE.Mesh(holoGeometry, holoMaterial);
+            window.scene.add(holoSphere);
         }
 
         function getLayerColor(layer) {
@@ -511,9 +502,9 @@
             window.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
             window.raycaster.setFromCamera(window.mouse, window.camera);
             const intersects = window.raycaster.intersectObjects(window.nodes);
-            window.nodes.forEach(n => n.material.emissiveIntensity = 0.5);
+            window.nodes.forEach(n => n.material.emissiveIntensity = 0.8);
             if (intersects.length > 0) {
-                intersects[0].object.material.emissiveIntensity = 1.5; // High for bloom
+                intersects[0].object.material.emissiveIntensity = 2.5; // Extreme for bloom
             }
         }
 
@@ -533,11 +524,15 @@
             document.getElementById('info-panel').style.display = 'block';
         }
 
+        window.closeInfo = function() {
+            document.getElementById('info-panel').style.display = 'none';
+        };
+
         function highlightNode(node) {
-            gsap.to(node.material, { duration: 0.8, emissiveIntensity: 2.0, yoyo: true, repeat: 1 });
-            gsap.to(node.scale, { duration: 0.8, x: 1.5, y: 1.5, z: 1.5, yoyo: true, repeat: 1 });
+            gsap.to(node.material, { duration: 0.8, emissiveIntensity: 3.0, yoyo: true, repeat: 1 });
+            gsap.to(node.scale, { duration: 0.8, x: 1.8, y: 1.8, z: 1.8, yoyo: true, repeat: 1 });
             if (node.userData.label) {
-                gsap.to(node.userData.label.scale, { duration: 0.8, x: 3.5, y: 0.9, yoyo: true, repeat: 1 });
+                gsap.to(node.userData.label.scale, { duration: 0.8, x: 4, y: 1, yoyo: true, repeat: 1 });
             }
         }
 
@@ -546,7 +541,7 @@
                 const [i1, i2] = connectionData[i];
                 if (i1 === startIndex || i2 === startIndex) {
                     gsap.to(conn.material, { duration: 1.5, opacity: 1.0 });
-                    gsap.to(conn.scale, { duration: 1.5, z: 1.8, yoyo: true, repeat: 2 });
+                    gsap.to(conn.scale, { duration: 1.5, z: 2.0, yoyo: true, repeat: 2 });
                     const color = conn.userData.difficulty > 4 ? 0xff4444 : 0x00aa00;
                     const rgb = getRGBFromColor(color);
                     gsap.to(conn.material.color, { duration: 0.5, ...rgb, yoyo: true, repeat: 1 });
@@ -558,7 +553,7 @@
             window.controls.reset();
             document.getElementById('info-panel').style.display = 'none';
             window.nodes.forEach(n => {
-                n.material.emissiveIntensity = 0.5;
+                n.material.emissiveIntensity = 0.8;
                 n.scale.set(1,1,1);
             });
             if (window.exploded) explodeView();
@@ -571,7 +566,7 @@
 
         function explodeView() {
             window.exploded = !window.exploded;
-            const offset = window.exploded ? 6 : 0;
+            const offset = window.exploded ? 7 : 0;
             Object.keys(window.layers).forEach(layer => {
                 gsap.to(window.layers[layer].position, {
                     duration: 1.5,
@@ -597,11 +592,11 @@
             breachPath.forEach((idx, step) => {
                 setTimeout(() => {
                     const node = window.nodes[idx];
-                    gsap.to(node.material, { duration: 1, emissiveIntensity: 3.0 });
+                    gsap.to(node.material, { duration: 1, emissiveIntensity: 4.0 });
                     const vulnRGB = getRGBFromColor(0xff4444);
                     gsap.to(node.material.color, { duration: 1, ...vulnRGB });
-                    gsap.to(node.scale, { duration: 1, x: 2.5, y: 2.5, z: 2.5, yoyo: true, repeat: 1 });
-                }, step * 800);
+                    gsap.to(node.scale, { duration: 1, x: 3, y: 3, z: 3, yoyo: true, repeat: 1 });
+                }, step * 600);
             });
             if (typeof AudioContext !== 'undefined') {
                 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -614,16 +609,7 @@
         }
 
         function searchNodes(event) {
-            const query = event.target.value.toLowerCase();
-            window.nodes.forEach(node => {
-                const visible = node.userData.name.toLowerCase().includes(query) || query === '';
-                node.visible = visible;
-                node.userData.label.visible = visible;
-                window.connections.forEach(conn => {
-                    const [n1, n2] = conn.userData.nodes;
-                    conn.visible = window.showPaths && n1.visible && n2.visible;
-                });
-            });
+            // Removed, no input
         }
 
         function scanForVulns() {
@@ -638,7 +624,7 @@
                     const vulnRGB = getRGBFromColor(0xff4444);
                     gsap.to(node.material, {
                         duration: 0.5,
-                        emissiveIntensity: 2.5,
+                        emissiveIntensity: 3.5,
                         delay: i * 0.05
                     });
                     gsap.to(node.material.color, {
@@ -649,7 +635,7 @@
                     results.push(`${node.userData.name}: ${node.userData.vulns[0]} detected`);
                     setTimeout(() => {
                         const originalRGB = getRGBFromColor(getLayerColor(node.userData.layer));
-                        gsap.to(node.material, { duration: 1, emissiveIntensity: 0.5 });
+                        gsap.to(node.material, { duration: 1, emissiveIntensity: 0.8 });
                         gsap.to(node.material.color, { duration: 1, ...originalRGB });
                     }, 500 + i * 50);
                 }
@@ -665,48 +651,64 @@
         }
 
         function updateVulnCount() {
-            document.getElementById('vuln-count').textContent = window.vulnCount;
+            // Legend removed, no need
         }
 
         function animate() {
             requestAnimationFrame(animate);
             window.controls.update();
 
-            // Enhanced animations
-            Object.values(window.layers).forEach(layer => layer.rotation.y += 0.003);
-            window.scene.fog.density = 0.05 + Math.sin(Date.now() * 0.0003) * 0.02; // Dynamic fog
+            // Ultimate animations: Rotate nodes subtly
+            window.nodes.forEach((node, i) => {
+                node.rotation.y += 0.005 * (i % 3 + 1);
+                node.rotation.x += 0.002 * Math.sin(Date.now() * 0.001 + i);
+            });
 
-            // Particle movement
-            if (Date.now() % 1 === 0) {
-                window.scene.traverse(obj => {
-                    if (obj.userData && obj.userData.type === 'particles') {
-                        const positions = obj.geometry.attributes.position.array;
-                        const velocities = obj.geometry.attributes.velocity.array;
-                        for (let i = 0; i < positions.length; i += 3) {
-                            positions[i] += velocities[i];
-                            positions[i+1] += velocities[i+1];
-                            positions[i+2] += velocities[i+2];
-                            if (Math.abs(positions[i]) > 40) velocities[i] *= -1;
-                            if (Math.abs(positions[i+1]) > 40) velocities[i+1] *= -1;
-                            if (Math.abs(positions[i+2]) > 40) velocities[i+2] *= -1;
-                        }
-                        obj.geometry.attributes.position.needsUpdate = true;
+            // Enhanced layer rotation
+            Object.values(window.layers).forEach(layer => layer.rotation.y += 0.004);
+
+            // Dynamic fog
+            window.scene.fog.density = 0.03 + Math.sin(Date.now() * 0.0005) * 0.01;
+
+            // Particle movement with acceleration
+            window.scene.traverse(obj => {
+                if (obj.userData && obj.userData.type === 'particles') {
+                    const positions = obj.geometry.attributes.position.array;
+                    const velocities = obj.geometry.attributes.velocity.array;
+                    for (let i = 0; i < positions.length; i += 3) {
+                        positions[i] += velocities[i];
+                        positions[i+1] += velocities[i+1];
+                        positions[i+2] += velocities[i+2];
+                        velocities[i] *= 0.999; // Damping
+                        velocities[i+1] *= 0.999;
+                        velocities[i+2] *= 0.999;
+                        if (Math.abs(positions[i]) > 50) velocities[i] *= -1.1; // Bounce with energy
+                        if (Math.abs(positions[i+1]) > 50) velocities[i+1] *= -1.1;
+                        if (Math.abs(positions[i+2]) > 50) velocities[i+2] *= -1.1;
                     }
-                });
-            }
+                    obj.geometry.attributes.position.needsUpdate = true;
+                }
+            });
 
-            // Holographic core enhanced pulse
-            const core = window.scene.children.find(c => c.geometry && c.geometry.type === 'TorusKnotGeometry');
+            // Holographic core ultimate pulse
+            const core = window.scene.children.find(c => c.geometry && c.geometry.type === 'DodecahedronGeometry');
             if (core) {
-                core.rotation.x += 0.015;
-                core.rotation.y += 0.008;
-                core.material.emissiveIntensity = 0.8 + Math.sin(Date.now() * 0.0015) * 0.4;
-                core.material.opacity = 0.5 + Math.sin(Date.now() * 0.002) * 0.3;
+                core.rotation.x += 0.02;
+                core.rotation.y += 0.01;
+                core.material.emissiveIntensity = 1.2 + Math.sin(Date.now() * 0.002) * 0.6;
+                core.material.opacity = 0.6 + Math.sin(Date.now() * 0.001) * 0.4;
             }
 
-            // Central light pulse
+            // Additional holo sphere rotation
+            const holoSphere = window.scene.children.find(c => c.geometry && c.geometry.type === 'SphereGeometry' && c.material.wireframe);
+            if (holoSphere) {
+                holoSphere.rotation.y += 0.006;
+                holoSphere.material.opacity = 0.15 + Math.sin(Date.now() * 0.003) * 0.1;
+            }
+
+            // Central light ultimate pulse
             const pointLight = window.scene.children.find(c => c.type === 'PointLight' && c.userData && c.userData.central);
-            if (pointLight) pointLight.intensity = 1.0 + Math.sin(Date.now() * 0.0008) * 0.5;
+            if (pointLight) pointLight.intensity = 1.5 + Math.sin(Date.now() * 0.001) * 0.8;
 
             window.composer.render();
         }
