@@ -161,21 +161,25 @@
         <button onclick="closeScan()">Acknowledge</button>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
-    <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script type="module">
+        import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.181.2/build/three.module.js';
+        import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.181.2/examples/jsm/controls/OrbitControls.js';
 
-    <script>
-        // Global variables
-        let scene, camera, renderer, controls;
-        let raycaster, mouse;
-        let layers = {}; // Store layer groups
-        let nodes = []; // All interactive nodes
-        let connections = []; // Line segments for paths
-        let showPaths = true;
-        let exploded = false;
-        let scanning = false;
-        let vulnCount = 0;
+        // Global variables (exposed to window for onclick etc.)
+        window.scene = null;
+        window.camera = null;
+        window.renderer = null;
+        window.controls = null;
+        window.raycaster = null;
+        window.mouse = null;
+        window.layers = {};
+        window.nodes = [];
+        window.connections = [];
+        window.showPaths = true;
+        window.exploded = false;
+        window.scanning = false;
+        window.vulnCount = 0;
 
         // Expanded Node data with detailed vulns and layer-specific loopholes
         const layerLoopholes = {
@@ -234,54 +238,50 @@
         function init() {
             try {
                 console.log('Starting Stark Globe init...');
-                if (typeof THREE === 'undefined') throw new Error('Three.js not loaded');
                 console.log('Three.js loaded:', THREE.REVISION);
 
-                if (typeof THREE.OrbitControls === 'undefined') throw new Error('OrbitControls not loaded');
-                console.log('OrbitControls loaded');
-
                 // Scene setup - Darker, more atmospheric
-                scene = new THREE.Scene();
-                scene.fog = new THREE.Fog(0x0a0a0a, 5, 60);
+                window.scene = new THREE.Scene();
+                window.scene.fog = new THREE.Fog(0x0a0a0a, 5, 60);
                 console.log('Scene created');
 
-                camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-                camera.position.set(0, 0, 25);
+                window.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                window.camera.position.set(0, 0, 25);
                 console.log('Camera created');
 
-                renderer = new THREE.WebGLRenderer({ antialias: true });
-                renderer.setSize(window.innerWidth, window.innerHeight);
-                renderer.setClearColor(0x0a0a0a);
-                renderer.shadowMap.enabled = true;
-                renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-                document.body.appendChild(renderer.domElement);
+                window.renderer = new THREE.WebGLRenderer({ antialias: true });
+                window.renderer.setSize(window.innerWidth, window.innerHeight);
+                window.renderer.setClearColor(0x0a0a0a);
+                window.renderer.shadowMap.enabled = true;
+                window.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                document.body.appendChild(window.renderer.domElement);
                 console.log('Renderer created');
 
                 // Controls with limits
-                controls = new THREE.OrbitControls(camera, renderer.domElement);
-                controls.enableDamping = true;
-                controls.dampingFactor = 0.05;
-                controls.minDistance = 5;
-                controls.maxDistance = 50;
+                window.controls = new OrbitControls(window.camera, window.renderer.domElement);
+                window.controls.enableDamping = true;
+                window.controls.dampingFactor = 0.05;
+                window.controls.minDistance = 5;
+                window.controls.maxDistance = 50;
                 console.log('Controls created');
 
                 // Raycaster
-                raycaster = new THREE.Raycaster();
-                mouse = new THREE.Vector2();
+                window.raycaster = new THREE.Raycaster();
+                window.mouse = new THREE.Vector2();
                 console.log('Raycaster created');
 
                 // Subtle Lighting
                 const ambientLight = new THREE.AmbientLight(0x002200, 0.6);
-                scene.add(ambientLight);
+                window.scene.add(ambientLight);
 
                 const directionalLight = new THREE.DirectionalLight(0x00aa00, 0.8);
                 directionalLight.position.set(10, 10, 5);
                 directionalLight.castShadow = true;
-                scene.add(directionalLight);
+                window.scene.add(directionalLight);
 
                 const pointLight = new THREE.PointLight(0x004400, 0.5, 100);
                 pointLight.position.set(0, 0, 0);
-                scene.add(pointLight);
+                window.scene.add(pointLight);
                 console.log('Lighting added');
 
                 // Create everything
@@ -295,7 +295,7 @@
                 // Events
                 window.addEventListener('resize', onWindowResize, false);
                 window.addEventListener('click', onMouseClick, false);
-                renderer.domElement.addEventListener('mousemove', onMouseMove, false);
+                window.renderer.domElement.addEventListener('mousemove', onMouseMove, false);
 
                 document.getElementById('loading').style.display = 'none';
                 animate();
@@ -320,10 +320,10 @@
                     opacity: 0.15, // Much subtler
                     linewidth: 0.5 // Thinner lines
                 });
-                layers[layer] = new THREE.Group(); // Group for explosion
+                window.layers[layer] = new THREE.Group(); // Group for explosion
                 const sphere = new THREE.Mesh(geometry, material);
-                layers[layer].add(sphere);
-                scene.add(layers[layer]);
+                window.layers[layer].add(sphere);
+                window.scene.add(window.layers[layer]);
             });
         }
 
@@ -348,8 +348,8 @@
                 node.userData = { ...data, index, originalPos: new THREE.Vector3(x, y, z) };
                 node.castShadow = true;
                 node.receiveShadow = true;
-                layers[data.layer].add(node); // Add to layer group
-                nodes.push(node);
+                window.layers[data.layer].add(node); // Add to layer group
+                window.nodes.push(node);
 
                 // Enhanced label with glow
                 const canvas = document.createElement('canvas');
@@ -370,15 +370,15 @@
                 sprite.position.copy(node.position);
                 sprite.position.y += 0.6;
                 sprite.scale.set(2.5, 0.6, 1);
-                layers[data.layer].add(sprite);
+                window.layers[data.layer].add(sprite);
                 node.userData.label = sprite;
             });
         }
 
         function createConnections() {
             connectionData.forEach(([i1, i2]) => {
-                const node1 = nodes[i1];
-                const node2 = nodes[i2];
+                const node1 = window.nodes[i1];
+                const node2 = window.nodes[i2];
                 const points = [];
                 points.push(node1.position.clone());
                 points.push(node2.position.clone());
@@ -390,9 +390,9 @@
                     linewidth: 1
                 });
                 const line = new THREE.Line(geometry, material);
-                scene.add(line);
+                window.scene.add(line);
                 line.userData = { nodes: [node1, node2], difficulty: Math.max(nodeData[i1].difficulty, nodeData[i2].difficulty) };
-                connections.push(line);
+                window.connections.push(line);
             });
         }
 
@@ -424,7 +424,7 @@
                 });
                 const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
                 particlesMesh.userData = { type: 'particles', positions: posArray, velocities: velArray };
-                scene.add(particlesMesh);
+                window.scene.add(particlesMesh);
             }
         }
 
@@ -438,7 +438,7 @@
                 side: THREE.DoubleSide
             });
             const core = new THREE.Mesh(coreGeometry, coreMaterial);
-            scene.add(core);
+            window.scene.add(core);
         }
 
         function getLayerColor(layer) {
@@ -455,30 +455,30 @@
         }
 
         function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+            window.camera.aspect = window.innerWidth / window.innerHeight;
+            window.camera.updateProjectionMatrix();
+            window.renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
         function onMouseClick(event) {
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(nodes);
+            window.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            window.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            window.raycaster.setFromCamera(window.mouse, window.camera);
+            const intersects = window.raycaster.intersectObjects(window.nodes);
             if (intersects.length > 0) {
                 const node = intersects[0].object;
                 showNodeInfo(node);
                 highlightNode(node);
-                if (showPaths) animatePathFrom(node.userData.index);
+                if (window.showPaths) animatePathFrom(node.userData.index);
             }
         }
 
         function onMouseMove(event) {
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(nodes);
-            nodes.forEach(n => n.material.emissiveIntensity = 0.1);
+            window.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            window.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            window.raycaster.setFromCamera(window.mouse, window.camera);
+            const intersects = window.raycaster.intersectObjects(window.nodes);
+            window.nodes.forEach(n => n.material.emissiveIntensity = 0.1);
             if (intersects.length > 0) {
                 intersects[0].object.material.emissiveIntensity = 0.3;
             }
@@ -509,7 +509,7 @@
         }
 
         function animatePathFrom(startIndex) {
-            connections.forEach((conn, i) => {
+            window.connections.forEach((conn, i) => {
                 const [i1, i2] = connectionData[i];
                 if (i1 === startIndex || i2 === startIndex) {
                     gsap.to(conn.material, { duration: 1.5, opacity: 0.8 });
@@ -523,25 +523,25 @@
         }
 
         function resetView() {
-            controls.reset();
+            window.controls.reset();
             document.getElementById('info-panel').style.display = 'none';
-            nodes.forEach(n => {
+            window.nodes.forEach(n => {
                 n.material.emissiveIntensity = 0.1;
                 n.scale.set(1,1,1);
             });
-            if (exploded) explodeView(); // Collapse if exploded
+            if (window.exploded) explodeView(); // Collapse if exploded
         }
 
         function togglePaths() {
-            showPaths = !showPaths;
-            connections.forEach(conn => conn.visible = showPaths);
+            window.showPaths = !window.showPaths;
+            window.connections.forEach(conn => conn.visible = window.showPaths);
         }
 
         function explodeView() {
-            exploded = !exploded;
-            const offset = exploded ? 5 : 0;
-            Object.keys(layers).forEach(layer => {
-                gsap.to(layers[layer].position, {
+            window.exploded = !window.exploded;
+            const offset = window.exploded ? 5 : 0;
+            Object.keys(window.layers).forEach(layer => {
+                gsap.to(window.layers[layer].position, {
                     duration: 1.5,
                     x: layer === 'perimeter' ? offset : 0,
                     y: layer === 'infra' ? offset : 0,
@@ -549,7 +549,7 @@
                     ease: "power2.inOut"
                 });
             });
-            nodes.forEach(node => {
+            window.nodes.forEach(node => {
                 gsap.to(node.position, {
                     duration: 1.5,
                     x: node.position.x * (1 + offset / node.userData.radius),
@@ -565,7 +565,7 @@
             const breachPath = [0, 4, 6, 10]; // Example path
             breachPath.forEach((idx, step) => {
                 setTimeout(() => {
-                    const node = nodes[idx];
+                    const node = window.nodes[idx];
                     gsap.to(node.material, { duration: 1, emissiveIntensity: 1 });
                     const vulnRGB = getRGBFromColor(0xff4444);
                     gsap.to(node.material.color, { duration: 1, ...vulnRGB });
@@ -585,27 +585,27 @@
 
         function searchNodes(event) {
             const query = event.target.value.toLowerCase();
-            nodes.forEach(node => {
+            window.nodes.forEach(node => {
                 const visible = node.userData.name.toLowerCase().includes(query) || query === '';
                 node.visible = visible;
                 node.userData.label.visible = visible;
                 // Hide connected lines if nodes hidden
-                connections.forEach(conn => {
+                window.connections.forEach(conn => {
                     const [n1, n2] = conn.userData.nodes;
-                    conn.visible = showPaths && n1.visible && n2.visible;
+                    conn.visible = window.showPaths && n1.visible && n2.visible;
                 });
             });
         }
 
         function scanForVulns() {
-            if (scanning) return;
-            scanning = true;
-            vulnCount = 0;
+            if (window.scanning) return;
+            window.scanning = true;
+            window.vulnCount = 0;
             const results = [];
-            nodes.forEach((node, i) => {
+            window.nodes.forEach((node, i) => {
                 const hasVuln = Math.random() > 0.3; // 70% chance
                 if (hasVuln) {
-                    vulnCount++;
+                    window.vulnCount++;
                     const vulnRGB = getRGBFromColor(0xff4444);
                     gsap.to(node.material, {
                         duration: 0.5,
@@ -628,7 +628,7 @@
             updateVulnCount();
             document.getElementById('results-list').innerHTML = results.slice(0, 5).join('<br>') + (results.length > 5 ? '<br>... and more' : '');
             document.getElementById('scan-results').style.display = 'block';
-            setTimeout(() => { document.getElementById('scan-results').style.display = 'none'; scanning = false; }, 5000);
+            setTimeout(() => { document.getElementById('scan-results').style.display = 'none'; window.scanning = false; }, 5000);
         }
 
         function closeScan() {
@@ -636,19 +636,19 @@
         }
 
         function updateVulnCount() {
-            document.getElementById('vuln-count').textContent = vulnCount;
+            document.getElementById('vuln-count').textContent = window.vulnCount;
         }
 
         function animate() {
             requestAnimationFrame(animate);
-            controls.update();
+            window.controls.update();
 
             // Slow layer rotation
-            Object.values(layers).forEach(layer => layer.rotation.y += 0.002);
+            Object.values(window.layers).forEach(layer => layer.rotation.y += 0.002);
 
             // Subtle particle movement (throttled for perf)
             if (Date.now() % 2 === 0) { // Every other frame
-                scene.traverse(obj => {
+                window.scene.traverse(obj => {
                     if (obj.userData && obj.userData.type === 'particles') {
                         const positions = obj.geometry.attributes.position.array;
                         const velocities = obj.geometry.attributes.velocity.array;
@@ -667,7 +667,7 @@
             }
 
             // Holographic core pulse
-            const core = scene.children.find(c => c.geometry && c.geometry.type === 'TorusGeometry');
+            const core = window.scene.children.find(c => c.geometry && c.geometry.type === 'TorusGeometry');
             if (core) {
                 core.rotation.x += 0.01;
                 core.rotation.y += 0.005;
@@ -675,10 +675,10 @@
             }
 
             // Central light subtle pulse
-            const pointLight = scene.children.find(c => c.type === 'PointLight');
+            const pointLight = window.scene.children.find(c => c.type === 'PointLight');
             if (pointLight) pointLight.intensity = 0.5 + Math.sin(Date.now() * 0.0005) * 0.2;
 
-            renderer.render(scene, camera);
+            window.renderer.render(window.scene, window.camera);
         }
 
         window.addEventListener('load', init);
