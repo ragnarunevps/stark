@@ -162,7 +162,7 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 
     <script>
@@ -232,59 +232,65 @@
         ];
 
         function init() {
-            // Scene setup - Darker, more atmospheric
-            scene = new THREE.Scene();
-            scene.fog = new THREE.Fog(0x0a0a0a, 5, 60);
+            try {
+                // Scene setup - Darker, more atmospheric
+                scene = new THREE.Scene();
+                scene.fog = new THREE.Fog(0x0a0a0a, 5, 60);
 
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 0, 25);
+                camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                camera.position.set(0, 0, 25);
 
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setClearColor(0x0a0a0a);
-            renderer.shadowMap.enabled = true;
-            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-            document.body.appendChild(renderer.domElement);
+                renderer = new THREE.WebGLRenderer({ antialias: true });
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                renderer.setClearColor(0x0a0a0a);
+                renderer.shadowMap.enabled = true;
+                renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                document.body.appendChild(renderer.domElement);
 
-            // Controls with limits
-            controls = new THREE.OrbitControls(camera, renderer.domElement);
-            controls.enableDamping = true;
-            controls.dampingFactor = 0.05;
-            controls.minDistance = 5;
-            controls.maxDistance = 50;
+                // Controls with limits
+                controls = new THREE.OrbitControls(camera, renderer.domElement);
+                controls.enableDamping = true;
+                controls.dampingFactor = 0.05;
+                controls.minDistance = 5;
+                controls.maxDistance = 50;
 
-            // Raycaster
-            raycaster = new THREE.Raycaster();
-            mouse = new THREE.Vector2();
+                // Raycaster
+                raycaster = new THREE.Raycaster();
+                mouse = new THREE.Vector2();
 
-            // Subtle Lighting
-            const ambientLight = new THREE.AmbientLight(0x002200, 0.6);
-            scene.add(ambientLight);
+                // Subtle Lighting
+                const ambientLight = new THREE.AmbientLight(0x002200, 0.6);
+                scene.add(ambientLight);
 
-            const directionalLight = new THREE.DirectionalLight(0x00aa00, 0.8);
-            directionalLight.position.set(10, 10, 5);
-            directionalLight.castShadow = true;
-            scene.add(directionalLight);
+                const directionalLight = new THREE.DirectionalLight(0x00aa00, 0.8);
+                directionalLight.position.set(10, 10, 5);
+                directionalLight.castShadow = true;
+                scene.add(directionalLight);
 
-            const pointLight = new THREE.PointLight(0x004400, 0.5, 100);
-            pointLight.position.set(0, 0, 0);
-            scene.add(pointLight);
+                const pointLight = new THREE.PointLight(0x004400, 0.5, 100);
+                pointLight.position.set(0, 0, 0);
+                scene.add(pointLight);
 
-            // Create everything
-            createLayers();
-            createNodes();
-            createConnections();
-            createAdvancedParticles();
-            createHolographicEffects();
+                // Create everything
+                createLayers();
+                createNodes();
+                createConnections();
+                createAdvancedParticles();
+                createHolographicEffects();
 
-            // Events
-            window.addEventListener('resize', onWindowResize, false);
-            window.addEventListener('click', onMouseClick, false);
-            renderer.domElement.addEventListener('mousemove', onMouseMove, false);
+                // Events
+                window.addEventListener('resize', onWindowResize, false);
+                window.addEventListener('click', onMouseClick, false);
+                renderer.domElement.addEventListener('mousemove', onMouseMove, false);
 
-            document.getElementById('loading').style.display = 'none';
-            animate();
-            updateVulnCount();
+                document.getElementById('loading').style.display = 'none';
+                animate();
+                updateVulnCount();
+                console.log('Stark Globe initialized successfully. Ready for orbital insertion.');
+            } catch (error) {
+                console.error('Init error:', error);
+                document.getElementById('loading').innerHTML += '<br><span style="color:#ff4444;">Init failed—check console.</span>';
+            }
         }
 
         function createLayers() {
@@ -403,8 +409,8 @@
                     opacity: 0.3
                 });
                 const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
-                scene.add(particlesMesh);
                 particlesMesh.userData = { type: 'particles', positions: posArray, velocities: velArray };
+                scene.add(particlesMesh);
             }
         }
 
@@ -542,12 +548,14 @@
                 }, step * 1000);
             });
             // Sound cue simulation (Web Audio)
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = audioCtx.createOscillator();
-            oscillator.connect(audioCtx.destination);
-            oscillator.frequency.setValueAtTime(440, audioCtx.currentTime);
-            oscillator.start();
-            setTimeout(() => oscillator.stop(), 3000);
+            if (typeof AudioContext !== 'undefined') {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                oscillator.connect(audioCtx.destination);
+                oscillator.frequency.setValueAtTime(440, audioCtx.currentTime);
+                oscillator.start();
+                setTimeout(() => oscillator.stop(), 3000);
+            }
         }
 
         function searchNodes(event) {
@@ -606,23 +614,25 @@
             // Slow layer rotation
             Object.values(layers).forEach(layer => layer.rotation.y += 0.002);
 
-            // Subtle particle movement
-            scene.traverse(obj => {
-                if (obj.userData.type === 'particles') {
-                    const positions = obj.geometry.attributes.position.array;
-                    const velocities = obj.geometry.attributes.velocity.array;
-                    for (let i = 0; i < positions.length; i += 3) {
-                        positions[i] += velocities[i];
-                        positions[i+1] += velocities[i+1];
-                        positions[i+2] += velocities[i+2];
-                        // Wrap around
-                        if (Math.abs(positions[i]) > 30) velocities[i] *= -1;
-                        if (Math.abs(positions[i+1]) > 30) velocities[i+1] *= -1;
-                        if (Math.abs(positions[i+2]) > 30) velocities[i+2] *= -1;
+            // Subtle particle movement (throttled for perf)
+            if (Date.now() % 2 === 0) { // Every other frame
+                scene.traverse(obj => {
+                    if (obj.userData && obj.userData.type === 'particles') {
+                        const positions = obj.geometry.attributes.position.array;
+                        const velocities = obj.geometry.attributes.velocity.array;
+                        for (let i = 0; i < positions.length; i += 3) {
+                            positions[i] += velocities[i];
+                            positions[i+1] += velocities[i+1];
+                            positions[i+2] += velocities[i+2];
+                            // Wrap around
+                            if (Math.abs(positions[i]) > 30) velocities[i] *= -1;
+                            if (Math.abs(positions[i+1]) > 30) velocities[i+1] *= -1;
+                            if (Math.abs(positions[i+2]) > 30) velocities[i+2] *= -1;
+                        }
+                        obj.geometry.attributes.position.needsUpdate = true;
                     }
-                    obj.geometry.attributes.position.needsUpdate = true;
-                }
-            });
+                });
+            }
 
             // Holographic core pulse
             const core = scene.children.find(c => c.geometry && c.geometry.type === 'TorusGeometry');
