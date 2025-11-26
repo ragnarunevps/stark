@@ -240,11 +240,11 @@
             { name: 'Monitoring (ELK)', layer: 'core', type: 'log', radius: 4, phi: 5*Math.PI/6, theta: Math.PI/2, vulns: ['Log Injection', 'Kibana RCE'], nextSteps: ['ElastAlert Abuse', 'KQL Injection'], difficulty: 4 }
         ];
 
-        // Expanded Connections with difficulties
+        // Expanded Connections with difficulties - Fixed index 14 to 13
         const connectionData = [
             [0, 4], [1, 5], [2, 4], [3, 5], // Perimeter to Infra
             [4, 6], [5, 6], [4, 7], [6, 8], [7, 9], // Infra internals
-            [6, 10], [8, 11], [9, 12], [10, 13], [11, 14] // Core pivots
+            [6, 10], [8, 11], [9, 12], [10, 13], [11, 13] // Core pivots - fixed last to [11,13]
         ];
 
         function init() {
@@ -303,6 +303,7 @@
 
                 const pointLight = new THREE.PointLight(0x004400, 1.0, 100);
                 pointLight.position.set(0, 0, 0);
+                pointLight.userData = { central: true };
                 window.scene.add(pointLight);
                 console.log('Lighting added');
 
@@ -339,8 +340,7 @@
                     color: layerColors[layer], 
                     wireframe: true, 
                     transparent: true, 
-                    opacity: 0.1,
-                    linewidth: 0.3
+                    opacity: 0.1
                 });
                 window.layers[layer] = new THREE.Group();
                 const sphere = new THREE.Mesh(geometry, material);
@@ -705,7 +705,7 @@
             }
 
             // Central light pulse
-            const pointLight = window.scene.children.find(c => c.type === 'PointLight' && c.position.length() === 0);
+            const pointLight = window.scene.children.find(c => c.type === 'PointLight' && c.userData && c.userData.central);
             if (pointLight) pointLight.intensity = 1.0 + Math.sin(Date.now() * 0.0008) * 0.5;
 
             window.composer.render();
