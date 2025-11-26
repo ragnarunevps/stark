@@ -1,354 +1,429 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CYBERGLØBE // Ethical Attack Surface Visualizer</title>
-  <style>
-    body, html { margin:0; padding:0; overflow:hidden; background:#000; font-family:'Courier New', monospace; color:#0f0; }
-    #container { width:100vw; height:100vh; }
-    #ui { position:absolute; top:0; left:0; right:0; bottom:0; pointer-events:none; z-index:10; }
-    #info { position:absolute; top:20px; left:20px; background:rgba(0,255,0,0.1); padding:15px; border:1px solid #0f0; border-radius:8px; max-width:380px; pointer-events:auto; }
-    #legend { position:absolute; bottom:20px; right:20px; background:rgba(0,0,0,0.8); padding:15px; border:2px solid #0f0; border-radius:10px; }
-    .node-label { font-size:12px; color:#0ff; text-shadow:0 0 10px #0ff; pointer-events:none; }
-    .attack-path { stroke:#f00; stroke-width:3; opacity:0; transition:opacity 0.4s; }
-    .attack-path.active { opacity:0.8; animation:pulse 2s infinite; }
-    @keyframes pulse { 0%,100%{stroke:#f00} 50%{stroke:#ff0} }
-    h1 { margin:0; font-size:24px; text-shadow:0 0 20px #0f0; }
-    button { background:#000; color:#0f0; border:1px solid #0f0; padding:8px 16px; margin:5px; cursor:pointer; }
-    button:hover { background:#0f0; color:#000; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberGlobe: Ethical Hacking System Navigator</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #000;
+            font-family: 'Courier New', monospace;
+            color: #00ff00;
+        }
+        #info-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 300px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #00ff00;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+            z-index: 100;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        #info-panel h3 {
+            margin: 0 0 10px 0;
+            color: #00ff41;
+        }
+        #info-panel ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        #info-panel li {
+            margin-bottom: 5px;
+            list-style-type: square;
+        }
+        #legend {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #00ff00;
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 100;
+        }
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #00ff00;
+            font-size: 18px;
+            z-index: 200;
+        }
+        #controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #00ff00;
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 100;
+        }
+        button {
+            background: #000;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 5px 10px;
+            margin: 2px;
+            cursor: pointer;
+            border-radius: 3px;
+            font-family: inherit;
+        }
+        button:hover {
+            background: #00ff00;
+            color: #000;
+        }
+    </style>
 </head>
 <body>
-  <div id="container"></div>
-  <div id="ui">
-    <div id="info">
-      <h1>CYBERGLØBE</h1>
-      <p id="node-info">Hover / click any node → see details & attack vectors</p>
-      <button onclick="resetView()">Reset View</button>
-      <button onclick="togglePaths()">Toggle Attack Paths</button>
-      <button onclick="loadSample('corp')">Load Corp Target</button>
-      <button onclick="loadSample('iot')">Load IoT Target</button>
-      <button onclick="loadSample('cloud')">Load Cloud Target</button>
+    <div id="loading">Initializing CyberGlobe... Scanning neural net for threats...</div>
+    <div id="info-panel">
+        <h3 id="node-title">Node Info</h3>
+        <ul id="node-details"></ul>
     </div>
     <div id="legend">
-      <div style="color:#00ffff">● Web / API</div>
-      <div style="color:#ff00ff">● Auth / SSO</div>
-      <div style="color:#ffff00">● Database</div>
-      <div style="color:#00ff00">● Internal Service</div>
-      <div style="color:#ff8800">● Cloud Resource</div>
-      <div style="color:#ff0000">● Exposed / Vulnerable</div>
-      <div style="color:#888888">● Lateral Movement Path</div>
+        <strong>Layers:</strong><br>
+        <span style="color:#ff0000">● Perimeter (Red)</span><br>
+        <span style="color:#ffff00">● Infrastructure (Yellow)</span><br>
+        <span style="color:#00ff00">● Core (Green)</span><br>
+        <span style="color:#0000ff">● Attack Paths (Blue Lines)</span>
     </div>
-  </div>
+    <div id="controls">
+        <button onclick="resetView()">Reset View</button>
+        <button onclick="togglePaths()">Toggle Paths</button>
+        <button onclick="scanForVulns()">Scan Vulns</button>
+    </div>
 
-<script src="https://cdn.jsdelivr.net/npm/three@0.168.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.168.0/examples/js/controls/OrbitControls.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.168.0/examples/js/objects/Sky.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.168.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 
-<script>
-// ============== GLOBALS ==============
-let scene, camera, renderer, controls, globeGroup, nodes = [], links = [], attackPaths = [];
-let showAttackPaths = false;
+    <script>
+        // Global variables
+        let scene, camera, renderer, controls;
+        let raycaster, mouse;
+        let layers = {}; // Store layer groups
+        let nodes = []; // All interactive nodes
+        let connections = []; // Line segments for paths
+        let showPaths = true;
+        let scanning = false;
 
-// ============== INIT ==============
-init();
-animate();
-createAtmosphere();
-createStars();
+        // Node data: Each node has position (spherical coords), layer, type, vulns, nextSteps
+        const nodeData = [
+            // Perimeter Layer (outer, radius 10)
+            { name: 'Firewall', layer: 'perimeter', type: 'defense', radius: 10, phi: 0, theta: 0, vulns: ['Misconfig', 'Rule Bypass'], nextSteps: ['Probe Ports', 'Social Eng'] },
+            { name: 'IDS/IPS', layer: 'perimeter', type: 'defense', radius: 10, phi: Math.PI/4, theta: Math.PI/2, vulns: ['Signature Evasion', 'DoS'], nextSteps: ['Craft Payloads', 'Tunnel Traffic'] },
+            { name: 'Load Balancer', layer: 'perimeter', type: 'infra', radius: 10, phi: Math.PI/2, theta: Math.PI, vulns: ['SSL Termination Flaw', 'Rate Limit Bypass'], nextSteps: ['SSLStrip', 'DDoS'] },
+            
+            // Infrastructure Layer (middle, radius 6)
+            { name: 'Web Server', layer: 'infra', type: 'app', radius: 6, phi: 0, theta: Math.PI/3, vulns: ['XSS', 'CSRF'], nextSteps: ['Reflected XSS', 'Session Hijack'] },
+            { name: 'API Gateway', layer: 'infra', type: 'app', radius: 6, phi: Math.PI/3, theta: 2*Math.PI/3, vulns: ['API Key Leak', 'Broken Auth'], nextSteps: ['Enum Endpoints', 'OAuth Abuse'] },
+            { name: 'App Server', layer: 'infra', type: 'app', radius: 6, phi: 2*Math.PI/3, theta: Math.PI, vulns: ['Deserialization', 'RCE'], nextSteps: ['Gadget Chains', 'Command Inj'] },
+            { name: 'Cache (Redis)', layer: 'infra', type: 'data', radius: 6, phi: Math.PI, theta: 4*Math.PI/3, vulns: ['No Auth', 'SSRF'], nextSteps: ['Key Enum', 'RCE via Lua'] },
+            
+            // Core Layer (inner, radius 3)
+            { name: 'Database (SQL)', layer: 'core', type: 'data', radius: 3, phi: Math.PI/6, theta: Math.PI/2, vulns: ['SQLi', 'Backup Exposure'], nextSteps: ['Union Select', 'Dump Tables'] },
+            { name: 'Secrets Vault', layer: 'core', type: 'secrets', radius: 3, phi: Math.PI/2, theta: Math.PI, vulns: ['Weak Encryption', 'Misconfig'], nextSteps: ['Brute Force', 'Side Channel'] },
+            { name: 'User DB', layer: 'core', type: 'data', radius: 3, phi: 5*Math.PI/6, theta: 3*Math.PI/2, vulns: ['Hash Cracking', 'IDOR'], nextSteps: ['Rainbow Tables', 'Privilege Esc'] }
+        ];
 
-function init() {
-  scene = new THREE.Scene();
-  camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 10000);
-  camera.position.set(0, 0, 300);
+        // Connections: pairs of node indices for attack paths
+        const connectionData = [
+            [0, 3], // Firewall -> Web Server
+            [1, 4], // IDS -> API
+            [2, 5], // LB -> App Server
+            [3, 6], // Web -> App
+            [4, 7], // API -> Cache
+            [5, 6], // App -> Cache
+            [6, 8], // App -> User DB
+            [7, 8], // Cache -> User DB
+            [8, 9]  // User DB -> Secrets
+        ];
 
-  renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
-  renderer.setSize(window.window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(window.devicePixelRatio);
-  document.getElementById('container').appendChild(renderer.domElement);
+        function init() {
+            // Scene setup
+            scene = new THREE.Scene();
+            scene.fog = new THREE.Fog(0x000000, 1, 50);
 
-  controls = new THREE.OrbitControls(camera, renderer.domElement);
-  controls.enableDamping = true;
-  controls.dampingFactor = 0.05;
-  controls.rotateSpeed = 0.5;
-  controls.minDistance = 150;
-  controls.maxDistance = 800;
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 0, 20);
 
-  globeGroup = new THREE.Group();
-  scene.add(globeGroup);
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(0x000000);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.body.appendChild(renderer.domElement);
 
-  window.addEventListener('resize', onWindowResize);
-  loadSample('corp'); // default target
-}
+            // Controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
 
-// ============== TARGET TEMPLATES ==============
-function loadSample(type) {
-  nodes.forEach(n => globeGroup.remove(n.mesh));
-  links.forEach(l => globeGroup.remove(l));
-  attackPaths.forEach(p => globeGroup.remove(p));
-  nodes = []; links = []; attackPaths = [];
+            // Raycaster for interactions
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
 
-  if(type==='corp') createCorporateTarget();
-  if(type==='iot') createIoTTarget();
-  if(type==='cloud') createCloudTarget();
-}
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
+            scene.add(ambientLight);
 
-function createCorporateTarget() {
-  const layers = {
-    external: {radius: 180, color:0x00ffff, label:"External Perimeter"},
-    web:      {radius: 150, color:0x00ffff, label:"Web / API Layer"},
-    auth:     {radius: 120, color:0xff00ff, label:"Auth / SSO"},
-    app:      {radius: 90,  color:0x00ff00, label:"Application Servers"},
-    data:     {radius: 60,  color:0xffff00, label:"Databases"},
-    core:     {radius: 30,  color:0xff0000, label:"Crown Jewels"}
-  };
+            const directionalLight = new THREE.DirectionalLight(0x00ff00, 1);
+            directionalLight.position.set(10, 10, 5);
+            directionalLight.castShadow = true;
+            scene.add(directionalLight);
 
-  // External exposed stuff
-  addNode({name:"login.company.com",     layer:"external", vuln:true,  info:"SSRF + Open Redirect → IDOR"});
-  addNode({name:"api.company.com",       layer:"external", vuln:true,  info:"GraphQL Introspection enabled + BOLA"});
-  addNode({name:"staging.company.com",   layer:"external", vuln:true,  info:"Debug mode on, .git exposed"});
-  addNode({name:"vpn.company.com",       layer:"external", vuln:false, info:"Old Pulse Secure → CVE-2019-11510"});
+            const pointLight = new THREE.PointLight(0x00ffff, 1, 100);
+            pointLight.position.set(0, 0, 0);
+            scene.add(pointLight);
 
-  // Web tier
-  addNode({name:"nginx-prod-01", layer:"web", info:"Rate limit bypassable"});
-  addNode({name:"apache-api-02", layer:"web", info:"ModSecurity bypassed with HPP"});
+            // Create layers
+            createLayers();
+            createNodes();
+            createConnections();
 
-  // Auth
-  addNode({name:"okta-sso",   layer:"auth", info:"MFA fatigue possible"});
-  addNode({name:"adfs-prod", layer:"auth", vuln:true, info:"Golden SAML forgeable"});
+            // Particles for cyber atmosphere
+            createParticles();
 
-  // App
-  addNode({name:"app-01.internal", layer:"app", info:"Deserialization gadget chain"});
-  addNode({name:"jenkins.internal", layer:"app", vuln:true, info:"Unauth Script Console"});
+            // Event listeners
+            window.addEventListener('resize', onWindowResize, false);
+            window.addEventListener('click', onMouseClick, false);
+            renderer.domElement.addEventListener('mousemove', onMouseMove, false);
 
-  // Data
-  addNode({name:"mssql-prod", layer:"data", info:"SA account weak password"});
-  addNode({name:"mongo-backup", layer:"data", vuln:true, info:"No auth, exposed backup"});
+            document.getElementById('loading').style.display = 'none';
+            animate();
+        }
 
-  // Core
-  addNode({name:"Domain Controller", layer:"core", info:"ZeroLogon + PrintNightmare"});
-  addNode({name:"SAP ERP", layer:"core", vuln:true, info:"Verb Tampering + RFC exploits"});
+        function createLayers() {
+            // Concentric wireframe spheres for layers
+            const layerRadii = { perimeter: 10, infra: 6, core: 3 };
+            const layerColors = { perimeter: 0xff0000, infra: 0xffff00, core: 0x00ff00 };
 
-  // Lateral movement paths (red glowing)
-  addAttackPath("staging.company.com", "jenkins.internal");
-  addAttackPath("api.company.com", "mongo-backup");
-  addAttackPath("adfs-prod", "Domain Controller");
-  addAttackPath("jenkins.internal", "SAP ERP");
-}
+            Object.keys(layerRadii).forEach(layer => {
+                const geometry = new THREE.SphereGeometry(layerRadii[layer], 32, 16);
+                const material = new THREE.MeshBasicMaterial({ color: layerColors[layer], wireframe: true, transparent: true, opacity: 0.3 });
+                layers[layer] = new THREE.Mesh(geometry, material);
+                scene.add(layers[layer]);
+            });
+        }
 
-function createIoTTarget() {
-  // You'll love this one — smart office + ICS
-  addNode({name:"camera-lobby.example.com", layer:"external", radius:190, vuln:true, info:"Mirai-class bot, default creds"});
-  addNode({name:"printer-hallway", layer:"external", vuln:true, info:"Pwn2Own 2023 winner"});
-  addNode({name:"iot-gateway", layer:"web", info:"Unauth MQTT broker"});
-  addNode({name:"PLC-01", layer:"core", vuln:true, info:"TRISIS / Triton payload possible"});
-  addNode({name:"HMI-SCADA", layer:"app", info:"Cleartext creds in memory"});
-  addAttackPath("camera-lobby.example.com", "iot-gateway");
-  addAttackPath("iot-gateway", "PLC-01");
-}
+        function createNodes() {
+            nodeData.forEach((data, index) => {
+                // Position in 3D space
+                const x = data.radius * Math.sin(data.phi) * Math.cos(data.theta);
+                const y = data.radius * Math.sin(data.phi) * Math.sin(data.theta);
+                const z = data.radius * Math.cos(data.phi);
 
-function createCloudTarget() {
-  addNode({name:"*.prod.company.io (ALB)", layer:"external", radius:190, vuln:true, info:"WAF bypass via Host header"});
-  addNode({name:"s3-backups-2024", layer:"external", vuln:true, info:"Public bucket → 50GB source code"});
-  addNode({name:"lambda-edge", layer:"web", info:"Serverless SSRF"});
-  addNode({name:"eks-cluster-admin", layer:"core", vuln:true, info:"Kubelet anon-auth enabled"});
-  addNode({name:"ssm-session-manager", layer:"app", info:"Session hijack possible"});
-  addAttackPath("s3-backups-2024", "eks-cluster-admin");
-}
+                // Node geometry: glowing sphere
+                const geometry = new THREE.SphereGeometry(0.3, 16, 16);
+                const material = new THREE.MeshPhongMaterial({ 
+                    color: getLayerColor(data.layer),
+                    emissive: getLayerColor(data.layer),
+                    emissiveIntensity: 0.2,
+                    transparent: true,
+                    opacity: 0.8
+                });
+                const node = new THREE.Mesh(geometry, material);
+                node.position.set(x, y, z);
+                node.userData = { ...data, index };
+                node.castShadow = true;
+                node.receiveShadow = true;
+                scene.add(node);
+                nodes.push(node);
 
-// ============== CORE BUILDERS ==============
-function addNode(data) {
-  const layerRadius = data.radius || 
-    (data.layer==="external"?180:
-     data.layer==="web"?150:
-     data.layer==="auth"?120:
-     data.layer==="app"?90:
-     data.layer==="data"?60:30);
+                // Label (text sprite - simplified with canvas)
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.width = 256;
+                canvas.height = 64;
+                context.fillStyle = '#000';
+                context.fillRect(0, 0, 256, 64);
+                context.fillStyle = '#00ff00';
+                context.font = 'bold 20px Courier New';
+                context.fillText(data.name, 10, 40);
+                const texture = new THREE.CanvasTexture(canvas);
+                const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
+                const sprite = new THREE.Sprite(spriteMaterial);
+                sprite.position.set(x, y + 0.5, z);
+                sprite.scale.set(2, 0.5, 1);
+                scene.add(sprite);
+                node.userData.label = sprite;
+            });
+        }
 
-  const phi = Math.random() * Math.PI * 2;
-  const theta = Math.acos(2*Math.random() - 1) + (data.layer==="external"?0.2:0);
+        function createConnections() {
+            connectionData.forEach(([i1, i2]) => {
+                const node1 = nodes[i1];
+                const node2 = nodes[i2];
+                const geometry = new THREE.BufferGeometry().setFromPoints([node1.position, node2.position]);
+                const material = new THREE.LineBasicMaterial({ color: 0x0000ff, transparent: true, opacity: 0.6 });
+                const line = new THREE.Line(geometry, material);
+                scene.add(line);
+                connections.push(line);
+            });
+        }
 
-  const x = layerRadius * Math.sin(theta) * Math.cos(phi);
-  const y = layerRadius * Math.sin(theta) * Math.sin(phi);
-  const z = layerRadius * Math.cos(theta);
+        function createParticles() {
+            const particlesGeometry = new THREE.BufferGeometry();
+            const particlesCnt = 1000;
+            const posArray = new Float32Array(particlesCnt * 3);
+            for (let i = 0; i < particlesCnt * 3; i++) {
+                posArray[i] = (Math.random() - 0.5) * 50;
+            }
+            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            const particlesMaterial = new THREE.PointsMaterial({
+                size: 0.005,
+                color: 0x00ffff,
+                transparent: true,
+                opacity: 0.8
+            });
+            const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+            scene.add(particlesMesh);
+        }
 
-  const geometry = new THREE.SphereGeometry(data.vuln?8:5, 16, 16);
-  const material = new THREE.MeshBasicMaterial({
-    color: data.vuln ? 0xff0000 : 
-           data.layer==="auth"?0xff00ff :
-           data.layer==="data"?0xffff00 :
-           data.layer==="core"?0xff0000 : 0x00ff00
-  });
-  const mesh = new THREE.Mesh(geometry, material);
+        function getLayerColor(layer) {
+            const colors = { perimeter: 0xff0000, infra: 0xffff00, core: 0x00ff00 };
+            return colors[layer] || 0xffffff;
+        }
 
-  if(data.vuln) {
-    const glow = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({color:0xff0000, transparent:true, opacity:0.4}));
-    glow.scale.multiplyScalar(2.5);
-    mesh.add(glow);
-  }
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
 
-  mesh.position.set(x,y,z);
-  mesh.userData = data;
-  globeGroup.add(mesh);
-  nodes.push({mesh, ...data, pos:new THREE.Vector3(x,y,z)});
-  
-  // Label
-  const label = document.createElement('div');
-  label.className = 'node-label';
-  label.textContent = data.name;
-  label.style.position = 'absolute';
-  document.body.appendChild(label);
-  mesh.userData.label = label;
-}
+        function onMouseClick(event) {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(nodes);
+            if (intersects.length > 0) {
+                const node = intersects[0].object;
+                showNodeInfo(node);
+                highlightNode(node);
+                // Animate path from this node
+                if (showPaths) animatePathFrom(node.userData.index);
+            }
+        }
 
-function addAttackPath(fromName, toName) {
-  const a = nodes.find(n=>n.name===fromName);
-  const b = nodes.find(n=>n.name===toName);
-  if(!a || !b) return;
+        function onMouseMove(event) {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(nodes);
+            // Hover effect
+            nodes.forEach(n => n.material.emissiveIntensity = 0.2);
+            if (intersects.length > 0) {
+                intersects[0].object.material.emissiveIntensity = 0.8;
+            }
+        }
 
-  const curve = new THREE.CatmullRomCurve3([a.pos, b.pos]);
-  const points = curve.getPoints(50);
-  const geometry = new THREE.BufferGeometry().setFromPoints(points);
-  const material = new THREE.LineBasicMaterial({color:0xff0000, transparent:true, opacity:0});
-  const line = new THREE.Line(geometry, material);
-  line.userData.active = false;
-  globeGroup.add(line);
-  attackPaths.push(line);
-}
+        function showNodeInfo(node) {
+            const data = node.userData;
+            document.getElementById('node-title').textContent = data.name + ' (' + data.layer.toUpperCase() + ')';
+            const details = document.getElementById('node-details');
+            details.innerHTML = `
+                <li><strong>Type:</strong> ${data.type}</li>
+                <li><strong>Vulnerabilities:</strong> ${data.vulns.join(', ')}</li>
+                <li><strong>Next Steps:</strong> ${data.nextSteps.join(', ')}</li>
+                <li><strong>Attack Vector:</strong> Focus here to pivot inward. Avoid distractions like unrelated endpoints.</li>
+            `;
+            document.getElementById('info-panel').style.display = 'block';
+        }
 
-function addLink(aName, bName, color=0x888888) {
-  const a = nodes.find(n=>n.name===aName)?.pos;
-  const b = nodes.find(n=>n.name===bName)?.pos;
-  if(!a || !b) return;
-  const geometry = new THREE.BufferGeometry().setFromPoints([a,b]);
-  const material = new THREE.LineBasicMaterial({color, opacity:0.3});
-  const line = new THREE.Line(geometry, material);
-  globeGroup.add(line);
-  links.push(line);
-}
+        function highlightNode(node) {
+            gsap.to(node.material, { duration: 0.5, emissiveIntensity: 1 });
+            gsap.to(node.scale, { duration: 0.5, x: 1.5, y: 1.5, z: 1.5, yoyo: true, repeat: 1 });
+            // Pulse label
+            if (node.userData.label) {
+                gsap.to(node.userData.label.scale, { duration: 0.5, x: 2.5, y: 0.75, yoyo: true, repeat: 1 });
+            }
+        }
 
-// ============== INTERACTION ==============
-const raycaster = new THREE.Raycaster();
-const mouse = new THREE.Vector2();
+        function animatePathFrom(startIndex) {
+            // Simple animation: glow connections from start
+            connections.forEach((conn, i) => {
+                const [i1, i2] = connectionData[i];
+                if (i1 === startIndex || i2 === startIndex) {
+                    gsap.to(conn.material, { duration: 1, opacity: 1 });
+                    gsap.to(conn.scale, { duration: 1, x: 1.2, yoyo: true, repeat: 3 });
+                }
+            });
+        }
 
-renderer.domElement.addEventListener('mousemove', (e) => {
-  mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-  mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-  
-  raycaster.setFromCamera(mouse, camera);
-  const intersects = raycaster.intersectObjects(nodes.map(n=>n.mesh));
-  
-  document.body.style.cursor = intersects.length > 0 ? 'pointer' : 'default';
-  
-  if(intersects.length > 0) {
-    const node = intersects[0].object.userData;
-    document.getElementById('node-info').innerHTML = `<strong>${node.name}</strong><br>${node.info || 'No known issues'}`;
-    
-    // Update 2D labels
-    nodes.forEach(n => n.mesh.userData.label.style.opacity = '0');
-    intersects[0].object.userData.label.style.opacity = '1';
-    updateLabelPosition(intersects[0].object);
-  } else {
-    document.getElementById('node-info').textContent = "Hover / click any node → see details & attack vectors";
-    nodes.forEach(n => n.mesh.userData.label.style.opacity = '0');
-  }
-});
+        function resetView() {
+            controls.reset();
+            document.getElementById('info-panel').style.display = 'none';
+            nodes.forEach(n => {
+                n.material.emissiveIntensity = 0.2;
+                n.scale.set(1,1,1);
+            });
+        }
 
-renderer.domElement.addEventListener('click', (e) => {
-  mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-  mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-  raycaster.setFromCamera(mouse, camera);
-  const intersects = raycaster.intersectObjects(nodes.map(n=>n.mesh));
-  if(intersects.length > 0) {
-    const pos = intersects[0].object.position;
-    new TWEEN.Tween(controls.target).to({x:pos.x*0.8,.target.y, z:pos.z*0.8}, 1000).easing(TWEEN.Easing.Cubic.Out).start();
-  }
-});
+        function togglePaths() {
+            showPaths = !showPaths;
+            connections.forEach(conn => {
+                conn.visible = showPaths;
+                conn.material.opacity = showPaths ? 0.6 : 0;
+            });
+        }
 
-function updateLabelPosition(mesh) {
-  const vector = mesh.position.clone();
-  vector.project(camera);
-  const x = (vector.x *  .5 + .5) * window.innerWidth;
-  const y = (vector.y * -.5 + .5) * window.innerHeight;
-  mesh.userData.label.style.transform = `translate(-50%, -50%) translate(${x}px,${y}px)`;
-}
+        function scanForVulns() {
+            if (scanning) return;
+            scanning = true;
+            nodes.forEach((node, i) => {
+                gsap.to(node.position, {
+                    duration: 0.5,
+                    y: node.position.y + Math.sin(i) * 0.5,
+                    yoyo: true,
+                    repeat: 1,
+                    delay: i * 0.1,
+                    onComplete: () => {
+                        scanning = false;
+                        // Random vuln highlight
+                        if (Math.random() > 0.5) {
+                            gsap.to(node.material.color, { duration: 0.3, r: 1, g: 0, b: 0 });
+                            setTimeout(() => gsap.to(node.material.color, { duration: 0.3, r: getLayerColor(node.userData.layer) / 0xffffff, g: 0, b: 0 }), 500);
+                        }
+                    }
+                });
+            });
+            // Scan message
+            const panel = document.getElementById('info-panel');
+            panel.style.display = 'block';
+            panel.innerHTML = '<h3>System Scan</h3><ul><li>Scanning for exploits...</li><li>Potential entry: Perimeter misconfigs</li><li>Path: Firewall -> Web -> DB</li><li>Stay focused: Ignore noise endpoints</li></ul>';
+            setTimeout(() => { panel.style.display = 'none'; }, 3000);
+        }
 
-// ============== UI FUNCTIONS ==============
-function resetView() {
-  controls.reset();
-  camera.position.set(0,0,300);
-  controls.target.set(0,0,0);
-}
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
 
-function togglePaths() {
-  showAttackPaths = !showAttackPaths;
-  attackPaths.forEach(p => {
-    p.material.opacity = showAttackPaths ? 0.8 : 0;
-    p.userData.active = showAttackPaths;
-    if(showAttackPaths) p.material.color.setHex(0xff0000);
-  });
-}
+            // Rotate layers slowly
+            Object.values(layers).forEach(layer => {
+                layer.rotation.y += 0.005;
+            });
 
-// ============== ATMOSPHERE & STARS ==============
-function createAtmosphere() {
-  const sky = new THREE.Sky();
-  sky.scale.setScalar(4500);
-  scene.add(sky);
+            // Pulse central light
+            scene.children.find(c => c.type === 'PointLight').intensity = 1 + Math.sin(Date.now() * 0.001) * 0.5;
 
-  const sun = new THREE.Vector3();
-  const theta = Math.PI * (0.49);
-  const phi = 2 * Math.PI * (0.25);
-  sun.setFromSphericalCoords(1000, theta, phi);
-  sky.material.uniforms.sunPosition.value.copy(sun);
-}
+            // Animate particles
+            scene.children.find(c => c.type === 'Points').rotation.y += 0.0005;
 
-function createStars() {
-  const starsGeometry = new THREE.BufferGeometry();
-  const starsMaterial = new THREE.PointsMaterial({color:0xffffff, size:1.5});
-  const vertices = [];
-  for(let i=0; i<10000; i++) {
-    const x = THREE.MathUtils.randFloatSpread(2000);
-    const y = THREE.MathUtils.randFloatSpread(2000);
-    const z = THREE.MathUtils.randFloatSpread(2000);
-    vertices.push(x,y,z);
-  }
-  starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices,3));
-  const stars = new THREE.Points(starsGeometry, starsMaterial);
-  scene.add(stars);
-}
+            renderer.render(scene, camera);
+        }
 
-// ============== ANIMATION LOOP ==============
-function animate() {
-  requestAnimationFrame(animate);
-  TWEEN.update();
-  controls.update();
-  
-  // Rotate globe slowly
-  globeGroup.rotation.y += 0.001;
-
-  // Update all labels
-  nodes.forEach(n => {
-    if(n.mesh.userData.label.style.opacity > 0) {
-      updateLabelPosition(n.mesh);
-    }
-  });
-
-  renderer.render(scene, camera);
-}
-
-function onWindowResize() {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-}
-
-// ============== TWEEN (for smooth fly-to) ==============
-const TWEEN = {
-  update: function() {}, // will be replaced by CDN
-  Easing: {Cubic:{Out: t=>1-Math.pow(1-t,3)}}
-};
-</script>
-<script src="https://cdn.jsdelivr.net/npm/tween.js@18.6.4/src/Tween.js"></script>
+        // Initialize on load
+        window.addEventListener('load', init);
+    </script>
 </body>
 </html>
