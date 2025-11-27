@@ -1,719 +1,276 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stark Globe: Ultimate Ethical Hacking System Navigator</title>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            background: #000000;
-            font-family: 'Courier New', monospace;
-            color: #00aa00;
-        }
-        #info-panel {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            width: 350px;
-            background: rgba(0, 0, 0, 0.95);
-            border: 1px solid #00aa00;
-            padding: 15px;
-            border-radius: 5px;
-            display: none;
-            z-index: 100;
-            max-height: 500px;
-            overflow-y: auto;
-            box-shadow: 0 0 20px rgba(0, 170, 0, 0.3);
-        }
-        #info-panel h3 {
-            margin: 0 0 10px 0;
-            color: #00ff41;
-            border-bottom: 1px solid #00aa00;
-            padding-bottom: 5px;
-            position: relative;
-        }
-        #close-info {
-            position: absolute;
-            top: 0;
-            right: 10px;
-            background: none;
-            border: none;
-            color: #00ff41;
-            font-size: 24px;
-            cursor: pointer;
-            opacity: 0.7;
-            transition: opacity 0.3s;
-        }
-        #close-info:hover {
-            opacity: 1;
-        }
-        #info-panel ul {
-            margin: 0;
-            padding-left: 20px;
-        }
-        #info-panel li {
-            margin-bottom: 8px;
-            list-style-type: none;
-            position: relative;
-            padding-left: 15px;
-        }
-        #info-panel li:before {
-            content: '▸';
-            position: absolute;
-            left: 0;
-            color: #00aa00;
-        }
-        #layer-vulns {
-            background: rgba(0, 0, 0, 0.7);
-            padding: 10px;
-            margin-top: 10px;
-            border-radius: 3px;
-        }
-        #loading {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: #00aa00;
-            font-size: 18px;
-            z-index: 200;
-            text-align: center;
-        }
-        #scan-results {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.95);
-            border: 1px solid #ff4444;
-            padding: 20px;
-            border-radius: 5px;
-            display: none;
-            z-index: 150;
-            max-width: 600px;
-            text-align: center;
-            color: #ff4444;
-        }
-        #scan-results button {
-            background: #000;
-            color: #ff4444;
-            border: 1px solid #ff4444;
-            padding: 5px 10px;
-            cursor: pointer;
-            border-radius: 3px;
-        }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Stark Globe — Pro Final (Distraction-Free)</title>
+  <meta name="description" content="Stark Globe — Final distraction-free pro build with Google‑Earth style controls, starfield, pulsating core and high-fidelity visuals." />
+  <style>
+    :root{--bg:#000;--accent:#00ffd6;--muted:#6ef0c8}
+    html,body{height:100%;margin:0;background:#000;overflow:hidden;font-family:Inter,ui-sans-serif,system-ui,monospace;color:var(--accent)}
+    #app{position:fixed;inset:0}
+    canvas{display:block;width:100%;height:100%}
+
+    /* minimal HUD (hidden by default) */
+    #hud{position:fixed;left:12px;top:12px;padding:8px 10px;border-radius:8px;background:rgba(0,0,0,0.35);backdrop-filter:blur(6px);font-size:13px;color:#bff;text-shadow:0 1px 8px rgba(0,0,0,0.6);display:none}
+    #miniToggle{position:fixed;right:12px;top:12px;padding:8px;border-radius:8px;background:rgba(0,0,0,0.25);cursor:pointer;color:var(--accent);font-size:13px}
+    #prompt{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;padding:6px 10px;border-radius:999px;background:rgba(0,0,0,0.28);color:#9ff;font-size:12px}
+
+    /* context overlay when inspecting (subtle) */
+    #inspect{position:fixed;right:12px;bottom:12px;min-width:260px;max-width:420px;padding:10px;border-radius:8px;background:linear-gradient(180deg,rgba(0,0,0,0.45),rgba(0,0,0,0.25));border:1px solid rgba(0,255,214,0.06);display:none;color:#dff}
+    #inspect h3{margin:0 0 6px;font-size:14px}
+    .tiny{font-size:12px;color:#9fe}
+
+    /* tasteful focus ring */
+    .focus-ring{box-shadow:0 0 24px rgba(0,255,214,0.08);border-radius:6px}
+
+    @media (max-width:600px){#inspect{display:none}}
+  </style>
 </head>
 <body>
-    <div id="loading">Initializing Stark Globe... Neural scan in progress... <br><span style="font-size:14px;">Establishing secure orbital view...</span></div>
-    <div id="info-panel">
-        <h3 id="node-title">Node Intel <button id="close-info" onclick="closeInfo()">×</button></h3>
-        <ul id="node-details"></ul>
-        <div id="layer-vulns">
-            <h4>Layer Loopholes</h4>
-            <ul id="layer-loopholes"></ul>
-        </div>
-    </div>
-    <div id="scan-results">
-        <h3>Scan Complete</h3>
-        <div id="results-list"></div>
-        <button onclick="closeScan()">Acknowledge</button>
-    </div>
+  <div id="app"></div>
+  <div id="hud">Stark Globe — Final • <span id="fps">--</span> FPS</div>
+  <div id="miniToggle" title="Toggle HUD (H)">☰</div>
+  <div id="prompt">Double-click a node to zoom • Right-click toggles HUD • H to hide/show</div>
+  <div id="inspect"><h3 id="inName">—</h3><div id="inMeta" class="tiny">—</div></div>
 
-    <script type="importmap">
-    {
-        "imports": {
-            "three": "https://cdn.jsdelivr.net/npm/three@0.181.2/build/three.module.js",
-            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.181.2/examples/jsm/"
-        }
+  <script type="module">
+  import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.181.2/build/three.module.js';
+  import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.181.2/examples/jsm/controls/OrbitControls.js';
+  import { EffectComposer } from 'https://cdn.jsdelivr.net/npm/three@0.181.2/examples/jsm/postprocessing/EffectComposer.js';
+  import { RenderPass } from 'https://cdn.jsdelivr.net/npm/three@0.181.2/examples/jsm/postprocessing/RenderPass.js';
+  import { UnrealBloomPass } from 'https://cdn.jsdelivr.net/npm/three@0.181.2/examples/jsm/postprocessing/UnrealBloomPass.js';
+  import { ShaderPass } from 'https://cdn.jsdelivr.net/npm/three@0.181.2/examples/jsm/postprocessing/ShaderPass.js';
+  import { FXAAShader } from 'https://cdn.jsdelivr.net/npm/three@0.181.2/examples/jsm/shaders/FXAAShader.js';
+
+  // ---------- Scene + renderer ----------
+  const container = document.getElementById('app');
+  const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.8));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  container.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x000000, 0.0025);
+
+  const camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 2000);
+  camera.position.set(0, 18, 48);
+
+  // controls — tuned to be like Google Earth (smooth, tilt, inertia)
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true; controls.dampingFactor = 0.12; controls.enablePan = true; controls.screenSpacePanning = false;
+  controls.minDistance = 6; controls.maxDistance = 250; controls.maxPolarAngle = Math.PI * 0.495; // allow tilt
+  controls.rotateSpeed = 0.4; controls.zoomSpeed = 0.8; controls.panSpeed = 0.6;
+
+  // smooth zooming helper
+  let targetDistance = null;
+  function smoothZoomTo(dist){ targetDistance = Math.max(4, Math.min(300, dist)); }
+
+  // ---------- postprocessing ----------
+  const composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, camera));
+  const bloom = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.6, 0.35, 0.9);
+  bloom.threshold = 0.12; bloom.strength = 1.4; bloom.radius = 0.6; composer.addPass(bloom);
+  const fxaa = new ShaderPass(FXAAShader); fxaa.uniforms['resolution'].value.set(1/window.innerWidth, 1/window.innerHeight); composer.addPass(fxaa);
+
+  // ---------- lighting ----------
+  const hemi = new THREE.HemisphereLight(0x335577, 0x000000, 0.6); scene.add(hemi);
+  const dir = new THREE.DirectionalLight(0x9dfcff, 1.0); dir.position.set(10,20,10); scene.add(dir);
+  const rim = new THREE.PointLight(0x00ffd6, 1.6, 60, 2); rim.position.set(0,0,0); scene.add(rim);
+
+  // ---------- starfield (procedural points) ----------
+  function makeStarfield(count=8000, radius=120){
+    const g = new THREE.BufferGeometry(); const positions = new Float32Array(count*3); const sizes = new Float32Array(count);
+    for(let i=0;i<count;i++){ const phi=Math.acos(2*Math.random()-1); const theta=2*Math.PI*Math.random(); const r = radius * (0.8 + 0.2*Math.random()); const x = r*Math.sin(phi)*Math.cos(theta); const y = r*Math.sin(phi)*Math.sin(theta); const z = r*Math.cos(phi); positions[i*3]=x; positions[i*3+1]=y; positions[i*3+2]=z; sizes[i]=Math.random()*2.4+0.2; }
+    g.setAttribute('position', new THREE.BufferAttribute(positions,3)); g.setAttribute('size', new THREE.BufferAttribute(sizes,1));
+    const mat = new THREE.PointsMaterial({ size: 1.2, sizeAttenuation: true, color: 0xffffff, transparent:true, opacity:0.9 });
+    const pts = new THREE.Points(g, mat); pts.renderOrder = 0; scene.add(pts); return pts;
+  }
+  const stars = makeStarfield(9000,220);
+
+  // ---------- core (heart) — layered pulsating shader-ish effect ----------
+  const coreGroup = new THREE.Group(); scene.add(coreGroup);
+  const coreGeo = new THREE.IcosahedronGeometry(3.6, 6);
+  const coreMat = new THREE.MeshStandardMaterial({ color: 0x00ffd6, emissive:0x00a887, emissiveIntensity:1.4, roughness:0.12, metalness:0.8, transparent:true, opacity:0.98 });
+  const core = new THREE.Mesh(coreGeo, coreMat); coreGroup.add(core);
+  // inner glow sphere
+  const glowGeo = new THREE.SphereGeometry(4.6,32,22);
+  const glowMat = new THREE.MeshBasicMaterial({ color:0x00ffd6, transparent:true, opacity:0.08 });
+  const glow = new THREE.Mesh(glowGeo, glowMat); coreGroup.add(glow);
+
+  // subtle energy tendrils (sine deformed lines)
+  const tendrilCount = 20; const tendrils = new THREE.Group(); coreGroup.add(tendrils);
+  for(let i=0;i<tendrilCount;i++){
+    const lgeo = new THREE.BufferGeometry(); const pts = new Float32Array(300*3);
+    for(let j=0;j<300;j++){ pts[j*3]=0; pts[j*3+1]= (j/300)*12; pts[j*3+2]=0; }
+    lgeo.setAttribute('position', new THREE.BufferAttribute(pts,3));
+    const lmat = new THREE.LineBasicMaterial({ color:0x00ffd6, transparent:true, opacity:0.22 });
+    const line = new THREE.Line(lgeo, lmat); line.rotation.y = Math.random()*Math.PI*2; line.rotation.x = Math.random()*0.4 - 0.2; tendrils.add(line);
+  }
+
+  // animate core pulses
+  let corePulse = 0;
+
+  // ---------- layers + nodes (high fidelity) ----------
+  const LAYERS = [ {id:'perimeter', radius:28, color:0xff6655, detail:128}, {id:'infra', radius:18, color:0xffcc33, detail:96}, {id:'core', radius:9, color:0x00ffd6, detail:64} ];
+  const layerGroups = {};
+  LAYERS.forEach(l=>{
+    const g = new THREE.Group(); g.name=l.id; scene.add(g); layerGroups[l.id]=g;
+    const ringGeo = new THREE.RingGeometry(l.radius-0.12, l.radius+0.12, 256);
+    const ringMat = new THREE.MeshBasicMaterial({ color: l.color, transparent:true, opacity:0.06, side:THREE.DoubleSide });
+    const ring = new THREE.Mesh(ringGeo, ringMat); ring.rotation.x = Math.PI/2; g.add(ring);
+    // high-res wire shell
+    const shell = new THREE.Mesh(new THREE.SphereGeometry(l.radius, 120, 80), new THREE.MeshStandardMaterial({ color:l.color, transparent:true, opacity:0.04, roughness:0.9, metalness:0.1 }));
+    g.add(shell);
+  });
+
+  // node defs (same schema but richer visuals)
+  const NODE_DEFS = [
+    {name:'Edge Firewall',layer:'perimeter',type:'defense',v:'Rule Bypass'},
+    {name:'WAF',layer:'perimeter',type:'defense',v:'Rule Evasion'},
+    {name:'Reverse Proxy',layer:'perimeter',type:'infra',v:'Header Injection'},
+    {name:'CDN Edge',layer:'perimeter',type:'infra',v:'Cache Poison'},
+    {name:'Web Cluster',layer:'infra',type:'app',v:'XSS'},
+    {name:'API Gateway',layer:'infra',type:'app',v:'Auth Bypass'},
+    {name:'App Server',layer:'infra',type:'app',v:'Prototype Poll'},
+    {name:'Primary DB',layer:'core',type:'data',v:'SQLi'},
+    {name:'Secrets Manager',layer:'core',type:'secrets',v:'Misconfig'}
+  ];
+
+  const nodes = [];
+  function placeNodes(){
+    const map = Object.fromEntries(LAYERS.map(l=>[l.id,l.radius]));
+    for(let i=0;i<NODE_DEFS.length;i++){
+      const d = NODE_DEFS[i]; const r = map[d.layer];
+      // spherical distribution but biased to visible hemisphere
+      const phi = Math.acos(1 - 2*Math.random()); const theta = Math.PI*2*Math.random();
+      const x = r * Math.sin(phi) * Math.cos(theta); const y = (Math.random()*0.8 - 0.2) * 6; const z = r * Math.sin(phi) * Math.sin(theta);
+      const geom = new THREE.SphereGeometry(0.6 + Math.random()*0.4, 24, 18);
+      const mat = new THREE.MeshStandardMaterial({ color: (d.layer==='core'?0x00ffd6: (d.layer==='infra'?0xffcc33:0xff6655)), emissive:0x000000, metalness:0.7, roughness:0.18});
+      const m = new THREE.Mesh(geom, mat); m.position.set(x,y,z); m.userData = d; m.userData.index = i;
+      // add subtle halo
+      const sprite = makeLabel(d.name);
+      sprite.position.set(x, y + 1.1, z); sprite.scale.set(1.6,0.5,1);
+      layerGroups[d.layer].add(m); layerGroups[d.layer].add(sprite);
+      nodes.push(m);
     }
-    </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script type="module">
-        import * as THREE from 'three';
-        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+  }
 
-        // Global variables (exposed to window for onclick etc.)
-        window.scene = null;
-        window.camera = null;
-        window.renderer = null;
-        window.controls = null;
-        window.composer = null;
-        window.raycaster = null;
-        window.mouse = null;
-        window.layers = {};
-        window.nodes = [];
-        window.connections = [];
-        window.showPaths = true;
-        window.exploded = false;
-        window.scanning = false;
-        window.vulnCount = 0;
+  function makeLabel(text){
+    const cvs = document.createElement('canvas'); cvs.width=512; cvs.height=128; const ctx=cvs.getContext('2d');
+    ctx.clearRect(0,0,cvs.width,cvs.height);
+    ctx.fillStyle='rgba(0,0,0,0.0)'; ctx.fillRect(0,0,cvs.width,cvs.height);
+    ctx.fillStyle='#cffff4'; ctx.font='bold 34px monospace'; ctx.fillText(text,18,78);
+    const texture = new THREE.CanvasTexture(cvs); texture.encoding = THREE.sRGBEncoding; const sp = new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true})); return sp;
+  }
 
-        // Expanded Node data with detailed vulns and layer-specific loopholes
-        const layerLoopholes = {
-            perimeter: [
-                'Firewall rule misconfigurations allowing unauthorized inbound traffic.',
-                'IDS/IPS signature gaps exploitable via polymorphic payloads.',
-                'DDoS mitigation bypass through slowloris or application-layer floods.',
-                'VPN endpoint weak ciphers or credential stuffing risks.',
-                'Perimeter honeypots misidentified as real assets, leading to false positives.'
-            ],
-            infra: [
-                'OWASP Top 10: Injection flaws in web apps (SQLi, command injection).',
-                'Broken access control allowing horizontal privilege escalation.',
-                'Cryptographic failures like weak TLS configs or hardcoded secrets.',
-                'API endpoint enumeration and rate-limit bypass.',
-                'Supply chain attacks via third-party libraries (e.g., Log4Shell).'
-            ],
-            core: [
-                'Database privilege abuse and blind SQL injection.',
-                'Kernel-level exploits for local privilege escalation (e.g., Dirty COW).',
-                'Secrets management failures (e.g., exposed AWS keys in env vars).',
-                'Lateral movement via RDP/SSH weak auth or pass-the-hash.',
-                'Data exfiltration channels hidden in DNS tunneling or covert channels.'
-            ]
-        };
+  placeNodes();
 
-        const nodeData = [
-            // Perimeter Layer (outer, radius 12) - DMZ
-            { name: 'Edge Firewall', layer: 'perimeter', type: 'defense', radius: 12, phi: 0, theta: 0, vulns: ['Rule Bypass', 'Stateful Inspection Flaw', 'NAT Traversal'], nextSteps: ['Nmap Stealth Scan', 'Hping3 Flood'], difficulty: 3 },
-            { name: 'WAF (ModSec)', layer: 'perimeter', type: 'defense', radius: 12, phi: Math.PI/6, theta: Math.PI/2, vulns: ['Custom Rule Evasion', 'False Negatives'], nextSteps: ['Payload Obfuscation', 'Chaining Attacks'], difficulty: 4 },
-            { name: 'Reverse Proxy', layer: 'perimeter', type: 'infra', radius: 12, phi: Math.PI/3, theta: Math.PI, vulns: ['Header Injection', 'Path Traversal'], nextSteps: ['Burp Suite Proxy', 'DirBuster'], difficulty: 2 },
-            { name: 'CDN Edge', layer: 'perimeter', type: 'infra', radius: 12, phi: Math.PI/2, theta: 3*Math.PI/2, vulns: ['Cache Poisoning', 'Origin Pull Bypass'], nextSteps: ['DNS Spoof', 'BOLA in APIs'], difficulty: 5 },
-            
-            // Infrastructure Layer (middle, radius 7)
-            { name: 'Web Cluster (Nginx)', layer: 'infra', type: 'app', radius: 7, phi: 0, theta: Math.PI/4, vulns: ['XSS Reflected/Stored', 'CSRF Token Bypass'], nextSteps: ['XSStrike', 'BeEF Framework'], difficulty: 2 },
-            { name: 'API Gateway (Kong)', layer: 'infra', type: 'app', radius: 7, phi: Math.PI/4, theta: 3*Math.PI/4, vulns: ['GraphQL Introspection', 'Broken Object Level Auth'], nextSteps: ['Postman Enum', 'JWT Forgery'], difficulty: 4 },
-            { name: 'App Servers (Node.js)', layer: 'infra', type: 'app', radius: 7, phi: Math.PI/2, theta: Math.PI, vulns: ['Prototype Pollution', 'Deserialization Gadgets'], nextSteps: ['ysoserial', 'NoSQL Injection'], difficulty: 3 },
-            { name: 'Message Queue (RabbitMQ)', layer: 'infra', type: 'data', radius: 7, phi: 3*Math.PI/4, theta: 5*Math.PI/4, vulns: ['Unauth Access', 'Queue Poisoning'], nextSteps: ['RABBit Footprint', 'DLQ Exploitation'], difficulty: 5 },
-            { name: 'Cache Layer (Memcached)', layer: 'infra', type: 'data', radius: 7, phi: Math.PI, theta: 7*Math.PI/4, vulns: ['Amplification DDoS', 'No Auth'], nextSteps: ['Memcrashed', 'Key Brute'], difficulty: 1 },
-            
-            // Core Layer (inner, radius 4)
-            { name: 'Primary DB (PostgreSQL)', layer: 'core', type: 'data', radius: 4, phi: Math.PI/6, theta: Math.PI/2, vulns: ['SQLi Time-Based', 'Privilege Escalation'], nextSteps: ['SQLMap', 'pg_dump Abuse'], difficulty: 4 },
-            { name: 'Secrets Manager (Vault)', layer: 'core', type: 'secrets', radius: 4, phi: Math.PI/3, theta: Math.PI, vulns: ['Policy Misconfig', 'Seal Bypass'], nextSteps: ['Vault CLI Pivot', 'Token Replay'], difficulty: 6 },
-            { name: 'Auth Server (LDAP)', layer: 'core', type: 'auth', radius: 4, phi: Math.PI/2, theta: 3*Math.PI/2, vulns: ['Pass-the-Ticket', 'Kerberoasting'], nextSteps: ['Mimikatz', 'BloodHound'], difficulty: 5 },
-            { name: 'File Store (S3)', layer: 'core', type: 'data', radius: 4, phi: 2*Math.PI/3, theta: 0, vulns: ['Bucket Perms', 'Shadow Copies'], nextSteps: ['AWS CLI Enum', 'Pacu Framework'], difficulty: 3 },
-            { name: 'Monitoring (ELK)', layer: 'core', type: 'log', radius: 4, phi: 5*Math.PI/6, theta: Math.PI/2, vulns: ['Log Injection', 'Kibana RCE'], nextSteps: ['ElastAlert Abuse', 'KQL Injection'], difficulty: 4 }
-        ];
+  // ---------- connections (curved, shiny) ----------
+  const connections = new THREE.Group(); scene.add(connections);
+  function link(a,b){
+    const pa = a.position; const pb = b.position; const mid = pa.clone().lerp(pb,0.5); mid.normalize().multiplyScalar(Math.max(pa.length(), pb.length())*1.06);
+    const curve = new THREE.CatmullRomCurve3([pa, mid, pb]); const pts = curve.getPoints(64);
+    const geo = new THREE.BufferGeometry().setFromPoints(pts);
+    const mat = new THREE.LineBasicMaterial({ color:0x00ffd6, linewidth:2, transparent:true, opacity:0.16 });
+    const line = new THREE.Line(geo, mat); connections.add(line);
+  }
+  for(let i=0;i<nodes.length-1;i++){ link(nodes[i], nodes[i+1]); }
 
-        // Expanded Connections with difficulties
-        const connectionData = [
-            [0, 4], [1, 5], [2, 4], [3, 5], // Perimeter to Infra
-            [4, 6], [5, 6], [4, 7], [6, 8], [7, 9], // Infra internals
-            [6, 10], [8, 11], [9, 12], [10, 13], [11, 13] // Core pivots
-        ];
+  // ---------- raycast + interactions ----------
+  const ray = new THREE.Raycaster(); const mouse = new THREE.Vector2(); let hovered=null;
+  function onMove(e){ mouse.x = (e.clientX / window.innerWidth) * 2 - 1; mouse.y = - (e.clientY / window.innerHeight) * 2 + 1; }
+  window.addEventListener('pointermove', onMove);
 
-        function init() {
-            try {
-                console.log('Starting Stark Globe init...');
-                console.log('Three.js loaded:', THREE.REVISION);
+  // double-click to zoom like Google Earth
+  window.addEventListener('dblclick', e=>{
+    ray.setFromCamera(mouse, camera);
+    const inter = ray.intersectObjects(nodes, false);
+    if(inter.length){ const n = inter[0].object; focusOnNode(n); }
+    else{ // zoom out
+      gsapZoomTo(48, new THREE.Vector3(0,6,0));
+    }
+  });
 
-                // Scene setup - Pure black
-                window.scene = new THREE.Scene();
-                window.scene.fog = new THREE.Fog(0x000000, 5, 60);
-                console.log('Scene created');
+  // right-click toggles HUD
+  window.addEventListener('contextmenu', e=>{ e.preventDefault(); toggleHUD(); });
 
-                window.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-                window.camera.position.set(0, 0, 25);
-                console.log('Camera created');
+  // keyboard H toggles HUD
+  window.addEventListener('keydown', e=>{ if(e.key==='h' || e.key==='H') toggleHUD(); if(e.key==='Escape'){ hideInspect(); } });
 
-                window.renderer = new THREE.WebGLRenderer({ antialias: true });
-                window.renderer.setSize(window.innerWidth, window.innerHeight);
-                window.renderer.setClearColor(0x000000);
-                window.renderer.shadowMap.enabled = true;
-                window.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-                window.renderer.toneMapping = THREE.ReinhardToneMapping;
-                window.renderer.toneMappingExposure = 1.5;
-                document.body.appendChild(window.renderer.domElement);
-                console.log('Renderer created');
+  // double tap on touch devices -> handled by dblclick
 
-                // Post-processing for ultimate glow
-                window.composer = new EffectComposer(window.renderer);
-                const renderPass = new RenderPass(window.scene, window.camera);
-                window.composer.addPass(renderPass);
-                const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-                window.composer.addPass(bloomPass);
-                console.log('Composer and Bloom setup');
+  // focus routine
+  import('https://cdn.jsdelivr.net/npm/gsap@3.12.2/dist/gsap.min.js').then(({gsap})=>{
+    window._gsap = gsap; // keep reference
+  });
 
-                // Controls with limits
-                window.controls = new OrbitControls(window.camera, window.renderer.domElement);
-                window.controls.enableDamping = true;
-                window.controls.dampingFactor = 0.05;
-                window.controls.minDistance = 5;
-                window.controls.maxDistance = 50;
-                console.log('Controls created');
+  function gsapZoomTo(dist, lookAt){
+    const gsap = window._gsap; if(!gsap) return; gsap.to(camera.position, { duration: 1.1, x: camera.position.x * (dist/camera.position.distanceTo(new THREE.Vector3(0,0,0))), y: camera.position.y * (dist/camera.position.distanceTo(new THREE.Vector3(0,0,0))), z: camera.position.z * (dist/camera.position.distanceTo(new THREE.Vector3(0,0,0))), ease: 'power2.inOut' });
+    if(lookAt) gsap.to({}, { duration: 1.05, onUpdate: ()=>{ camera.lookAt(lookAt); } });
+  }
 
-                // Raycaster
-                window.raycaster = new THREE.Raycaster();
-                window.mouse = new THREE.Vector2();
-                console.log('Raycaster created');
+  function focusOnNode(node){
+    const pos = node.position.clone(); const dir = pos.clone().normalize().multiplyScalar(6); const dest = pos.clone().add(dir);
+    const gsap = window._gsap; if(!gsap) return; gsap.to(camera.position, { x: dest.x, y: dest.y + 1.2, z: dest.z, duration: 1.1, ease: 'power2.inOut' });
+    gsap.to(controls.target, { x: pos.x, y: pos.y, z: pos.z, duration: 1.1, ease: 'power2.inOut' });
+    showInspect(node.userData);
+  }
 
-                // Enhanced Lighting for ultimate visuals
-                const ambientLight = new THREE.AmbientLight(0x001100, 0.4);
-                window.scene.add(ambientLight);
+  function showInspect(data){ const el = document.getElementById('inspect'); document.getElementById('inName').textContent = data.name; document.getElementById('inMeta').textContent = `${data.type} • layer: ${data.layer} • vuln: ${data.v||'—'}`; el.style.display='block'; el.classList.add('focus-ring'); }
+  function hideInspect(){ const el = document.getElementById('inspect'); el.style.display='none'; }
+  function toggleHUD(){ const hud = document.getElementById('hud'); hud.style.display = hud.style.display === 'none' || hud.style.display === '' ? 'block':'none'; }
 
-                const directionalLight = new THREE.DirectionalLight(0x00aa00, 1.2);
-                directionalLight.position.set(10, 10, 5);
-                directionalLight.castShadow = true;
-                window.scene.add(directionalLight);
+  document.getElementById('miniToggle').addEventListener('click', toggleHUD);
 
-                const pointLight = new THREE.PointLight(0x002200, 1.5, 100);
-                pointLight.position.set(0, 0, 0);
-                pointLight.userData = { central: true };
-                window.scene.add(pointLight);
-                console.log('Lighting added');
+  // ---------- subtle animations ----------
+  let last = performance.now(); function updateTendrils(time){ tendrils.children.forEach((ln,i)=>{
+    const pos = ln.geometry.attributes.position.array; for(let j=0;j<300;j++){ const idx=j*3; const baseY = (j/300)*12; const wob = Math.sin(time*0.002 + i*0.6 + j*0.12) * (0.18 + (j/300)*0.8); pos[idx] = wob * Math.cos(i+j) ; pos[idx+1] = baseY; pos[idx+2] = wob * Math.sin(i+j);
+    }
+    ln.geometry.attributes.position.needsUpdate = true;
+  }); }
 
-                // Create everything
-                createLayers();
-                createNodes();
-                createConnections();
-                createAdvancedParticles();
-                createHolographicEffects();
-                console.log('All objects created');
+  // ---------- FPS HUD ----------
+  const fpsEl = document.getElementById('fps'); let fpsCount = {last: performance.now(), frames:0, fps:60};
+  function tickFPS(){ fpsCount.frames++; const now = performance.now(); if(now - fpsCount.last > 500){ fpsCount.fps = Math.round(fpsCount.frames*1000/(now-fpsCount.last)); fpsCount.last = now; fpsCount.frames=0; fpsEl.textContent = fpsCount.fps; } }
 
-                // Events
-                window.addEventListener('resize', onWindowResize, false);
-                window.addEventListener('click', onMouseClick, false);
-                window.renderer.domElement.addEventListener('mousemove', onMouseMove, false);
+  // ---------- animation loop ----------
+  function animate(){ requestAnimationFrame(animate);
+    // smooth zoom to targetDistance
+    if(targetDistance){ const cur = camera.position.length(); const diff = targetDistance - cur; if(Math.abs(diff) > 0.05){ camera.position.multiplyScalar(1 + diff*0.02); } else { targetDistance = null; } }
 
-                document.getElementById('loading').style.display = 'none';
-                animate();
-                updateVulnCount();
-                console.log('Stark Globe initialized successfully. Ready for orbital insertion.');
-            } catch (error) {
-                console.error('Init error details:', error);
-                document.getElementById('loading').innerHTML += '<br><span style="color:#ff4444;">Init failed—check console for details.</span>';
-            }
-        }
+    // pulsate core
+    corePulse += 0.03; const pulse = 1 + Math.sin(corePulse)*0.14; core.scale.setScalar(pulse); glow.scale.setScalar(1 + Math.sin(corePulse*0.6)*0.08);
+    rim.intensity = 0.4 + Math.abs(Math.sin(corePulse*0.7))*1.6; core.material.emissiveIntensity = 0.8 + Math.abs(Math.sin(corePulse))*1.2;
 
-        function createLayers() {
-            const layerRadii = { perimeter: 12, infra: 7, core: 4 };
-            const layerColors = { perimeter: 0x330000, infra: 0x333300, core: 0x003300 };
+    // rotate layers slowly
+    Object.values(layerGroups).forEach((g,idx)=> g.rotation.y += 0.0008 * (idx+1));
 
-            Object.keys(layerRadii).forEach(layer => {
-                const geometry = new THREE.SphereGeometry(layerRadii[layer], 128, 64); // Ultra smooth
-                const material = new THREE.MeshBasicMaterial({ 
-                    color: layerColors[layer], 
-                    wireframe: true, 
-                    transparent: true, 
-                    opacity: 0.08
-                });
-                window.layers[layer] = new THREE.Group();
-                const sphere = new THREE.Mesh(geometry, material);
-                window.layers[layer].add(sphere);
-                window.scene.add(window.layers[layer]);
-            });
-        }
+    // tendrils animation
+    updateTendrils(performance.now());
 
-        function createNodes() {
-            nodeData.forEach((data, index) => {
-                const x = data.radius * Math.sin(data.phi) * Math.cos(data.theta);
-                const y = data.radius * Math.sin(data.phi) * Math.sin(data.theta);
-                const z = data.radius * Math.cos(data.phi);
+    // raycast hover
+    ray.setFromCamera(mouse, camera);
+    const hits = ray.intersectObjects(nodes, false);
+    if(hits.length){ if(hovered !== hits[0].object){ if(hovered) hovered.material.emissive.setHex(0x000000); hovered = hits[0].object; hovered.material.emissive.setHex(0x002233); document.body.style.cursor = 'pointer'; } }
+    else{ if(hovered){ hovered.material.emissive.setHex(0x000000); hovered = null; document.body.style.cursor = ''; } }
 
-                // Ultimate node: High-detail icosahedron with advanced material
-                const geometry = new THREE.IcosahedronGeometry(0.25, 3); // Even higher detail
-                const material = new THREE.MeshStandardMaterial({ 
-                    color: getLayerColor(data.layer),
-                    emissive: new THREE.Color(getLayerColor(data.layer)).multiplyScalar(0.8), // Intense emissive
-                    emissiveIntensity: 0.8,
-                    metalness: 0.9,
-                    roughness: 0.1,
-                    transparent: true,
-                    opacity: 0.98
-                });
-                const node = new THREE.Mesh(geometry, material);
-                node.position.set(x, y, z);
-                node.userData = { ...data, index, originalPos: new THREE.Vector3(x, y, z) };
-                node.castShadow = true;
-                node.receiveShadow = true;
-                window.layers[data.layer].add(node);
-                window.nodes.push(node);
+    controls.update(); composer.render(); tickFPS();
+  }
 
-                // Aura ring for VFX
-                const ringGeo = new THREE.RingGeometry(0.3, 0.5, 32);
-                const ringMat = new THREE.MeshBasicMaterial({ 
-                    color: getLayerColor(data.layer), 
-                    side: THREE.DoubleSide, 
-                    transparent: true, 
-                    opacity: 0.4 
-                });
-                const ring = new THREE.Mesh(ringGeo, ringMat);
-                ring.rotation.x = Math.PI / 2;
-                node.add(ring);
+  animate();
 
-                // Enhanced label
-                const canvas = document.createElement('canvas');
-                const context = canvas.getContext('2d');
-                canvas.width = 256;
-                canvas.height = 64;
-                context.fillStyle = 'rgba(0,0,0,0.9)';
-                context.fillRect(0, 0, 256, 64);
-                context.strokeStyle = '#00aa00';
-                context.lineWidth = 2;
-                context.strokeRect(0, 0, 256, 64);
-                context.fillStyle = '#00aa00';
-                context.font = 'bold 16px Courier New';
-                context.fillText(data.name, 10, 40);
-                const texture = new THREE.CanvasTexture(canvas);
-                const spriteMaterial = new THREE.SpriteMaterial({ map: texture, transparent: true });
-                const sprite = new THREE.Sprite(spriteMaterial);
-                sprite.position.copy(node.position);
-                sprite.position.y += 0.6;
-                sprite.scale.set(2.5, 0.6, 1);
-                window.layers[data.layer].add(sprite);
-                node.userData.label = sprite;
+  // ---------- responsiveness ----------
+  window.addEventListener('resize', ()=>{ renderer.setSize(window.innerWidth, window.innerHeight); composer.setSize(window.innerWidth, window.innerHeight); camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); fxaa.uniforms['resolution'].value.set(1/window.innerWidth,1/window.innerHeight); });
 
-                // Node-specific point light for enhanced glow
-                const nodeLight = new THREE.PointLight(getLayerColor(data.layer), 0.8, 3);
-                nodeLight.position.copy(node.position);
-                window.scene.add(nodeLight);
-            });
-        }
+  // ---------- small helpers for export and final-touch: PNG export via key P ----------
+  window.addEventListener('keydown', e=>{ if(e.key==='p'||e.key==='P'){ renderer.domElement.toBlob(b=>{ const url = URL.createObjectURL(b); const a=document.createElement('a'); a.href=url; a.download='stark_globe_final.png'; a.click(); URL.revokeObjectURL(url); }); } });
 
-        function createConnections() {
-            connectionData.forEach(([i1, i2]) => {
-                const node1 = window.nodes[i1];
-                const node2 = window.nodes[i2];
-                const points = [];
-                points.push(node1.position.clone());
-                points.push(node2.position.clone());
-                const geometry = new THREE.BufferGeometry().setFromPoints(points);
-                const material = new THREE.LineBasicMaterial({ 
-                    color: 0x003366, 
-                    transparent: true, 
-                    opacity: 0.8
-                });
-                const line = new THREE.Line(geometry, material);
-                window.scene.add(line);
-                line.userData = { nodes: [node1, node2], difficulty: Math.max(nodeData[i1].difficulty, nodeData[i2].difficulty) };
-                window.connections.push(line);
-            });
-        }
+  // expose scene for integration
+  window.starkFinal = { scene, camera, renderer, nodes, layerGroups };
 
-        function createAdvancedParticles() {
-            // Ultimate particles: more layers, higher count, color variation
-            for (let i = 0; i < 6; i++) {
-                const particlesGeometry = new THREE.BufferGeometry();
-                const particlesCnt = 5000;
-                const posArray = new Float32Array(particlesCnt * 3);
-                const velArray = new Float32Array(particlesCnt * 3);
-                const colorArray = new Float32Array(particlesCnt * 3);
-                for (let j = 0; j < particlesCnt * 3; j += 3) {
-                    const radius = 2 + i * 7;
-                    const phi = Math.random() * Math.PI * 2;
-                    const theta = Math.random() * Math.PI * 2;
-                    posArray[j] = radius * Math.sin(phi) * Math.cos(theta);
-                    posArray[j+1] = radius * Math.sin(phi) * Math.sin(theta);
-                    posArray[j+2] = radius * Math.cos(phi);
-                    velArray[j] = (Math.random() - 0.5) * 0.03;
-                    velArray[j+1] = (Math.random() - 0.5) * 0.03;
-                    velArray[j+2] = (Math.random() - 0.5) * 0.03;
-                    // Color variation for cyber feel
-                    colorArray[j] = Math.random() * 0.2;
-                    colorArray[j+1] = Math.random() * 0.2 + 0.1;
-                    colorArray[j+2] = Math.random() * 0.2 + 0.2;
-                }
-                particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-                particlesGeometry.setAttribute('velocity', new THREE.BufferAttribute(velArray, 3));
-                particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
-                const particlesMaterial = new THREE.PointsMaterial({
-                    size: 0.04,
-                    vertexColors: true,
-                    transparent: true,
-                    opacity: 0.5,
-                    blending: THREE.AdditiveBlending
-                });
-                const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
-                particlesMesh.userData = { type: 'particles', positions: posArray, velocities: velArray };
-                window.scene.add(particlesMesh);
-            }
-        }
-
-        function createHolographicEffects() {
-            // Ultimate core: Complex geometry with shader-like material
-            const coreGeometry = new THREE.DodecahedronGeometry(1, 2);
-            const coreMaterial = new THREE.MeshStandardMaterial({ 
-                color: 0x002200, 
-                emissive: 0x00aa00,
-                emissiveIntensity: 1.2, // Extreme for bloom
-                transparent: true, 
-                opacity: 0.8,
-                metalness: 1,
-                roughness: 0,
-                wireframe: true
-            });
-            const core = new THREE.Mesh(coreGeometry, coreMaterial);
-            window.scene.add(core);
-
-            // Additional holographic sphere
-            const holoGeometry = new THREE.SphereGeometry(1.5, 64, 32);
-            const holoMaterial = new THREE.MeshBasicMaterial({ 
-                color: 0x00aa00, 
-                wireframe: true, 
-                transparent: true, 
-                opacity: 0.2 
-            });
-            const holoSphere = new THREE.Mesh(holoGeometry, holoMaterial);
-            window.scene.add(holoSphere);
-        }
-
-        function getLayerColor(layer) {
-            const colors = { perimeter: 0xcc0000, infra: 0xccaa00, core: 0x00aa00 };
-            return colors[layer] || 0x666666;
-        }
-
-        function getRGBFromColor(colorHex) {
-            return {
-                r: (colorHex >> 16) / 255,
-                g: ((colorHex >> 8) & 0xff) / 255,
-                b: (colorHex & 0xff) / 255
-            };
-        }
-
-        function onWindowResize() {
-            window.camera.aspect = window.innerWidth / window.innerHeight;
-            window.camera.updateProjectionMatrix();
-            window.renderer.setSize(window.innerWidth, window.innerHeight);
-            window.composer.setSize(window.innerWidth, window.innerHeight);
-        }
-
-        function onMouseClick(event) {
-            window.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            window.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-            window.raycaster.setFromCamera(window.mouse, window.camera);
-            const intersects = window.raycaster.intersectObjects(window.nodes);
-            if (intersects.length > 0) {
-                const node = intersects[0].object;
-                showNodeInfo(node);
-                highlightNode(node);
-                if (window.showPaths) animatePathFrom(node.userData.index);
-            }
-        }
-
-        function onMouseMove(event) {
-            window.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            window.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-            window.raycaster.setFromCamera(window.mouse, window.camera);
-            const intersects = window.raycaster.intersectObjects(window.nodes);
-            window.nodes.forEach(n => n.material.emissiveIntensity = 0.8);
-            if (intersects.length > 0) {
-                intersects[0].object.material.emissiveIntensity = 2.5; // Extreme for bloom
-            }
-        }
-
-        function showNodeInfo(node) {
-            const data = node.userData;
-            document.getElementById('node-title').textContent = data.name + ' [' + data.layer.toUpperCase() + ']';
-            const details = document.getElementById('node-details');
-            details.innerHTML = `
-                <li><strong>Type:</strong> ${data.type.toUpperCase()}</li>
-                <li><strong>Key Vulns:</strong> ${data.vulns.join(' | ')}</li>
-                <li><strong>Next Vectors:</strong> ${data.nextSteps.join(' | ')}</li>
-                <li><strong>Difficulty:</strong> ${data.difficulty}/10</li>
-                <li><strong>Guidance:</strong> Focus on ${data.layer} layer; ignore peripheral noise like unrelated APIs.</li>
-            `;
-            const loopholes = document.getElementById('layer-loopholes');
-            loopholes.innerHTML = layerLoopholes[data.layer].map(v => `<li>${v}</li>`).join('');
-            document.getElementById('info-panel').style.display = 'block';
-        }
-
-        window.closeInfo = function() {
-            document.getElementById('info-panel').style.display = 'none';
-        };
-
-        function highlightNode(node) {
-            gsap.to(node.material, { duration: 0.8, emissiveIntensity: 3.0, yoyo: true, repeat: 1 });
-            gsap.to(node.scale, { duration: 0.8, x: 1.8, y: 1.8, z: 1.8, yoyo: true, repeat: 1 });
-            if (node.userData.label) {
-                gsap.to(node.userData.label.scale, { duration: 0.8, x: 4, y: 1, yoyo: true, repeat: 1 });
-            }
-        }
-
-        function animatePathFrom(startIndex) {
-            window.connections.forEach((conn, i) => {
-                const [i1, i2] = connectionData[i];
-                if (i1 === startIndex || i2 === startIndex) {
-                    gsap.to(conn.material, { duration: 1.5, opacity: 1.0 });
-                    gsap.to(conn.scale, { duration: 1.5, z: 2.0, yoyo: true, repeat: 2 });
-                    const color = conn.userData.difficulty > 4 ? 0xff4444 : 0x00aa00;
-                    const rgb = getRGBFromColor(color);
-                    gsap.to(conn.material.color, { duration: 0.5, ...rgb, yoyo: true, repeat: 1 });
-                }
-            });
-        }
-
-        function resetView() {
-            window.controls.reset();
-            document.getElementById('info-panel').style.display = 'none';
-            window.nodes.forEach(n => {
-                n.material.emissiveIntensity = 0.8;
-                n.scale.set(1,1,1);
-            });
-            if (window.exploded) explodeView();
-        }
-
-        function togglePaths() {
-            window.showPaths = !window.showPaths;
-            window.connections.forEach(conn => conn.visible = window.showPaths);
-        }
-
-        function explodeView() {
-            window.exploded = !window.exploded;
-            const offset = window.exploded ? 7 : 0;
-            Object.keys(window.layers).forEach(layer => {
-                gsap.to(window.layers[layer].position, {
-                    duration: 1.5,
-                    x: layer === 'perimeter' ? offset : 0,
-                    y: layer === 'infra' ? offset : 0,
-                    z: layer === 'core' ? -offset : 0,
-                    ease: "power2.inOut"
-                });
-            });
-            window.nodes.forEach(node => {
-                gsap.to(node.position, {
-                    duration: 1.5,
-                    x: node.position.x * (1 + offset / node.userData.radius),
-                    y: node.position.y * (1 + offset / node.userData.radius),
-                    z: node.position.z * (1 + offset / node.userData.radius),
-                    ease: "power2.inOut"
-                });
-            });
-        }
-
-        function simulateAttack() {
-            const breachPath = [0, 4, 6, 10];
-            breachPath.forEach((idx, step) => {
-                setTimeout(() => {
-                    const node = window.nodes[idx];
-                    gsap.to(node.material, { duration: 1, emissiveIntensity: 4.0 });
-                    const vulnRGB = getRGBFromColor(0xff4444);
-                    gsap.to(node.material.color, { duration: 1, ...vulnRGB });
-                    gsap.to(node.scale, { duration: 1, x: 3, y: 3, z: 3, yoyo: true, repeat: 1 });
-                }, step * 600);
-            });
-            if (typeof AudioContext !== 'undefined') {
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = audioCtx.createOscillator();
-                oscillator.connect(audioCtx.destination);
-                oscillator.frequency.setValueAtTime(440, audioCtx.currentTime);
-                oscillator.start();
-                setTimeout(() => oscillator.stop(), 3000);
-            }
-        }
-
-        function searchNodes(event) {
-            // Removed, no input
-        }
-
-        function scanForVulns() {
-            if (window.scanning) return;
-            window.scanning = true;
-            window.vulnCount = 0;
-            const results = [];
-            window.nodes.forEach((node, i) => {
-                const hasVuln = Math.random() > 0.3;
-                if (hasVuln) {
-                    window.vulnCount++;
-                    const vulnRGB = getRGBFromColor(0xff4444);
-                    gsap.to(node.material, {
-                        duration: 0.5,
-                        emissiveIntensity: 3.5,
-                        delay: i * 0.05
-                    });
-                    gsap.to(node.material.color, {
-                        duration: 0.5,
-                        ...vulnRGB,
-                        delay: i * 0.05
-                    });
-                    results.push(`${node.userData.name}: ${node.userData.vulns[0]} detected`);
-                    setTimeout(() => {
-                        const originalRGB = getRGBFromColor(getLayerColor(node.userData.layer));
-                        gsap.to(node.material, { duration: 1, emissiveIntensity: 0.8 });
-                        gsap.to(node.material.color, { duration: 1, ...originalRGB });
-                    }, 500 + i * 50);
-                }
-            });
-            updateVulnCount();
-            document.getElementById('results-list').innerHTML = results.slice(0, 5).join('<br>') + (results.length > 5 ? '<br>... and more' : '');
-            document.getElementById('scan-results').style.display = 'block';
-            setTimeout(() => { document.getElementById('scan-results').style.display = 'none'; window.scanning = false; }, 5000);
-        }
-
-        function closeScan() {
-            document.getElementById('scan-results').style.display = 'none';
-        }
-
-        function updateVulnCount() {
-            // Legend removed, no need
-        }
-
-        function animate() {
-            requestAnimationFrame(animate);
-            window.controls.update();
-
-            // Ultimate animations: Rotate nodes subtly
-            window.nodes.forEach((node, i) => {
-                node.rotation.y += 0.005 * (i % 3 + 1);
-                node.rotation.x += 0.002 * Math.sin(Date.now() * 0.001 + i);
-            });
-
-            // Enhanced layer rotation
-            Object.values(window.layers).forEach(layer => layer.rotation.y += 0.004);
-
-            // Dynamic fog
-            window.scene.fog.density = 0.03 + Math.sin(Date.now() * 0.0005) * 0.01;
-
-            // Particle movement with acceleration
-            window.scene.traverse(obj => {
-                if (obj.userData && obj.userData.type === 'particles') {
-                    const positions = obj.geometry.attributes.position.array;
-                    const velocities = obj.geometry.attributes.velocity.array;
-                    for (let i = 0; i < positions.length; i += 3) {
-                        positions[i] += velocities[i];
-                        positions[i+1] += velocities[i+1];
-                        positions[i+2] += velocities[i+2];
-                        velocities[i] *= 0.999; // Damping
-                        velocities[i+1] *= 0.999;
-                        velocities[i+2] *= 0.999;
-                        if (Math.abs(positions[i]) > 50) velocities[i] *= -1.1; // Bounce with energy
-                        if (Math.abs(positions[i+1]) > 50) velocities[i+1] *= -1.1;
-                        if (Math.abs(positions[i+2]) > 50) velocities[i+2] *= -1.1;
-                    }
-                    obj.geometry.attributes.position.needsUpdate = true;
-                }
-            });
-
-            // Holographic core ultimate pulse
-            const core = window.scene.children.find(c => c.geometry && c.geometry.type === 'DodecahedronGeometry');
-            if (core) {
-                core.rotation.x += 0.02;
-                core.rotation.y += 0.01;
-                core.material.emissiveIntensity = 1.2 + Math.sin(Date.now() * 0.002) * 0.6;
-                core.material.opacity = 0.6 + Math.sin(Date.now() * 0.001) * 0.4;
-            }
-
-            // Additional holo sphere rotation
-            const holoSphere = window.scene.children.find(c => c.geometry && c.geometry.type === 'SphereGeometry' && c.material.wireframe);
-            if (holoSphere) {
-                holoSphere.rotation.y += 0.006;
-                holoSphere.material.opacity = 0.15 + Math.sin(Date.now() * 0.003) * 0.1;
-            }
-
-            // Central light ultimate pulse
-            const pointLight = window.scene.children.find(c => c.type === 'PointLight' && c.userData && c.userData.central);
-            if (pointLight) pointLight.intensity = 1.5 + Math.sin(Date.now() * 0.001) * 0.8;
-
-            window.composer.render();
-        }
-
-        window.addEventListener('load', init);
-    </script>
+  </script>
 </body>
 </html>
